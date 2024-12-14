@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kadima Kids Therapy</title>
+    <meta name="author" content="noushadBug">
+    <meta name="description" content="">
+
+    <!-- Tailwind -->
+    <link href="https://fonts.googleapis.com/css2?family=Proxima+Nova&family=Veneer&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <?!= include('C/Stylesheet'); ?>
+
+</head>
+
+<body x-data="{ loading: true }" x-init="setTimeout(() => loading = false, 800)"
+    class="bg-gray-100 font-family-karla flex">
+
+    <!-- Full-Screen Loading Animation -->
+    <div x-show="loading" class="fixed inset-0 flex items-center justify-center bg-gray-800 z-50">
+        <div class="flex items-center justify-center">
+            <div class="w-16 h-16 border-t-4 border-b-4 border-white rounded-full animate-spin"></div>
+        </div>
+    </div>
+
+
+    <!-- login starts -->
+    <div x-show="$store.appStore.isUNotLoggedIn" x-transition>
+        <div id="login" class="h-screen w-screen mx-auto bg-white text-black shadow"
+            style="text-align: -webkit-center;align-content: center;place-self: center;">
+            <img src="<?!= include('C/logo'); ?>" style="width:30%;filter: drop-shadow(2px 4px 6px #0F0);">
+            <?!= include('C/Login'); ?>
+        </div>
+    </div>
+    <!-- login ends -->
+
+
+    <div x-transition x-show="$store.appStore.isULoggedIn"
+        class="relative w-full flex flex-col h-screen overflow-y-hidden">
+        <!-- Desktop Header -->
+        <header class="w-full items-center bg-white py-2 px-6 hidden sm:flex">
+            <div class="w-1/2">
+                <img src="<?!= include('C/logo'); ?>" style="width:15%;">
+            </div>
+            <div class="w-1/2 text-center">
+                <span class="text-center text-3xl font-bold mb-6">Therapist Session Form</span>
+            </div>
+            <div x-data="{ isOpen: false }" class="relative w-1/2 flex justify-end">
+                <span class="content-center px-1">Logged in as </span>
+                <button @click="isOpen = !isOpen"
+                    class="justify-center h-10 w-auto px-2 text-left bg-zinc-600 rounded-full text-white relative z-10 flex items-center text-sm overflow-hidden">
+                    <span class="userName whitespace-nowrap overflow-hidden">..</span>
+                </button>
+                <button x-show="isOpen" @click="isOpen = false"
+                    class="bg-transparent h-full w-full fixed inset-0 cursor-default"></button>
+                <div x-show="isOpen"
+                    class="cursor-pointer z-10 absolute w-32 bg-white border-2 border-slate-950 rounded-lg shadow-xl py-2 mt-16">
+                    <!-- <a href="#" class="block px-4 py-2 account-link hover:text-white">Account</a>
+                    <a href="#" class="block px-4 py-2 account-link hover:text-white">Support</a> -->
+                    <a @click="isOpen = !isOpen; logout()" class="block px-4 py-2 account-link hover:text-white">Sign
+                        Out</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Header & Nav -->
+        <header x-data="{ isOpen: false }" class="mobile-header bg-white w-full bg-sidebar py-1 px-6 sm:hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex">
+                    <a href="#0" class="text-white text-3xl font-semibold uppercase hover:text-gray-300"
+                        style="width: 30%;">
+                        <img src="<?!= include('C/logo'); ?>">
+                    </a>
+                    <div class="w-1/2 m-auto text-center">
+                        <span class="text-center  font-bold mb-6">Therapist Session Form</span>
+                    </div>
+                </div>
+                <button @click="isOpen = !isOpen"
+                    class="bg-transparent box-shadow-none text-dark shadow-none text-3xl focus:outline-none">
+                    <i x-show="!isOpen" class="fas fa-bars"></i>
+                    <i x-show="isOpen" class="fas fa-times"></i>
+                </button>
+
+            </div>
+
+            <!-- Dropdown Nav -->
+            <nav :class="isOpen ? 'flex': 'hidden'" class="flex flex-col pt-4">
+
+                <button @click="logout()"
+                    class="w-full  cta-btn font-semibold py-2 mt-3 rounded-lg shadow-lg hover:shadow-xl bg-gray-300 hover:bg-gray-500 flex items-center justify-center">
+                    <i class="fas fa-sign-out-alt mr-3"></i> Sign Out
+                </button>
+            </nav>
+        </header>
+
+        <div class="w-full h-screen overflow-x-hidden border-t flex flex-col">
+            <main class="main-center w-full flex-grow px-6 py-2">
+                <?!= include('C/SessionForm'); ?>
+
+                <!-- jQuery -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+            </main>
+
+        </div>
+        <footer class="w-full bg-gray-500 text-right text-white p-4 py-0">
+            <small> Built by <a target="_blank" href="https://fiverr.com/web_coder_nsd"
+                    class="underline">noushadBug</a>.</small>
+        </footer>
+
+    </div>
+
+    <!-- Font Awesome -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/js/all.min.js"
+        integrity="sha256-KzZiKy0DWYsnwMF+X1DvQngQ2/FxF7MF3Ff72XcpuPs=" crossorigin="anonymous"></script>
+
+    <?!= include('C/AlpineSetup'); ?>
+    <?!= include('C/Script'); ?>
+    <!-- Select2 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <script>
+        $("select:not('.not-select2')").select2({
+            allowClear: true
+        });
+    </script>
+
+
+</body>
+
+</html>
