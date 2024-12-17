@@ -1,32 +1,33 @@
 <script>
-    document.addEventListener("alpine:init", () => {
-      Alpine.store("appStore", {
-        serverLoading: false,
-        openModal: false,
-        loggedUser: localStorage.getItem("loggedInUser"),
-        isULoggedIn: localStorage.getItem("loggedInUser") !== null,
-        isUNotLoggedIn: !this.isULoggedIn,
-        printStatus: function () {
-          console.log(this.isULoggedIn);
-        },
+  document.addEventListener("alpine:init", () => {
+    Alpine.store("appStore", {
+      serverLoading: false,
+      openModal: false,
+      loggedUser: localStorage.getItem("loggedInUser"),
+      isULoggedIn: localStorage.getItem("loggedInUser") !== null,
+      isUNotLoggedIn: !this.isULoggedIn,
+      printStatus: function () {
+        console.log(this.isULoggedIn);
+      },
+      
+      
+      patients: [],
+      shortTermGoals: [],
+
+      formData: {
+        dateOfService: new Date().toISOString().split('T')[0],
+        patientId: "",
+        placeOfServices: "",
+        startTime: "",
+        endTime: "",
+        duration: "",
+        planOfCare:"",
+        verified: false
+      },
+      sessionData: [
         
-        
-        patients: [],
-        shortTermGoals: [],
-  
-        formData: {
-          patientId: "",
-          placeOfServices: "",
-          startTime: "",
-          endTime: "",
-          duration: "",
-          planOfCare:"",
-          verified: false
-        },
-        sessionData: [
-          
-        ]
-  
-      });
+      ]
+
     });
-  </script>
+  });
+</script>

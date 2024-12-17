@@ -1,366 +1,600 @@
 <div class="bg-gray-100 flex items-center justify-center">
-    <div x-data="sessionForm()" x-init="initData()" class="bg-white p-2 md:p-8 rounded shadow-md max-w-lg w-full">
+  <div x-data="sessionForm()" x-init="if($store.appStore.isULoggedIn)initData()"
+    class="bg-white p-2 md:p-8 rounded shadow-md max-w-lg w-full">
 
-        <div x-show="loading['main']"
-            class="absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center bg-opacity-50 bg-gray-200"
-            style="z-index: 50;">
-            <!-- SVG Spinner -->
-            <svg class="animate-spin h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"></circle>
-                <path d="M4 12a8 8 0 1 1 8 8" stroke="currentColor"></path>
-            </svg>
-        </div>
-
-        <!-- Main Card -->
-        <div>
-            <div class="mb-3">
-                <label for="patient" class="block text-gray-700 font-bold">Patient ID</label>
-                <select id="patient" class="w-full border border-gray-300 rounded p-2"
-                    x-model="$store.appStore.formData.patientId">
-                    <option selected value="" disabled>Select a Patient</option>
-                    <template x-for="patient in $store.appStore.patients" :key="patient.id">
-                        <option :value="patient.id" x-text="patient.id + ' - ' + patient.name"></option>
-                    </template>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label for="placeOfServices" class="block text-gray-700 font-bold">Place Of Services</label>
-                <select id="placeOfServices" class="w-full border border-gray-300 rounded p-2"
-                    x-model="$store.appStore.formData.placeOfServices">
-                    <option value="" selected disabled>Please Select</option>
-                    <option value="Home">Home</option>
-                    <option value="Community">Community</option>
-                </select>
-            </div>
-
-            <div class="flex flex-wrap gap-4 mb-3">
-                <div class="flex-1">
-                    <label for="startTime" class="block text-gray-700 font-bold">Session Start Time</label>
-                    <input type="time" id="startTime" class="w-full border border-gray-300 rounded p-2"
-                        x-model="$store.appStore.formData.startTime" @change="calculateSessionDuration()" />
-                </div>
-                <div class="flex-1">
-                    <label for="endTime" class="block text-gray-700 font-bold">Session End Time</label>
-                    <input type="time" id="endTime" class="w-full border border-gray-300 rounded p-2"
-                        x-model="$store.appStore.formData.endTime" @change="calculateSessionDuration()" />
-                </div>
-                <div class="flex-1">
-                    <label class="block text-gray-700 font-bold">Total Duration</label>
-                    <input type="text" class="w-full border border-gray-300 rounded p-2 bg-gray-100"
-                        x-model="$store.appStore.formData.duration" readonly />
-                </div>
-            </div>
-        </div>
-
-        <!-- Dynamically Generated Content -->
-        <template x-for="(session, index) in $store.appStore.sessionData" :key="index"
-            x-init="$watch('duration', (value, oldValue) => console.log(value, oldValue))">
-            <div class="border-2 rounded-lg border-gray-300 mt-4 p-3">
-
-                <!-- Dropdown for Long Term Goals -->
-                <div class="mb-3">
-                    <label for="longTermGoals" class="block text-gray-700 font-bold">Long Term Goals</label>
-                    <select :id="'longTermGoals-' + index" class="not-select2 w-full border border-gray-300 rounded p-2"
-                        x-model="session.longTermGoal" @change="fetchShortTermGoals(session)">
-                        <option value="" disabled selected>Select a Long Term Goal</option>
-                        <template x-for="(goal, goalIndex) in longTermGoalNames" :key="goalIndex">
-                            <option :value="goal.id" x-text="goal.shortCode + ' - ' + goal.goalName"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <!-- Dropdown for Short Term Goals -->
-                <div class="mb-4">
-                    <div class="flex">
-                        <label :for="'shortTermGoals-' + index" class="block text-gray-700 font-medium">Short Term
-                            Goals</label>
-                        <div x-show="loading['shortTermGoals']">
-                            <div x-html="loadingSvg"></div>
-                        </div>
-                        <div x-show="patientIdNotFound">
-                            <small><span class="font-bold px-4 text-red-600">Please Select Patient!</span></small>
-                        </div>
-                    </div>
-                    <select :disabled="loading['shortTermGoals']" :id="'shortTermGoals-' + index"
-                        class="w-full border border-gray-300 rounded p-2" x-model="session.shortTermGoal">
-                        <option value="" disabled>Select a Short Term Goal</option>
-                        <template x-for="(goal, goalIndex) in shortTermGoalNames[index]" :key="goalIndex">
-                            <option :value="goal.id" x-text="goal.text"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <!-- Checkboxes: Tailoring Interaction -->
-                <div class="mb-3">
-                    <label class="block text-gray-700 font-bold">What I did to tailor the interaction for the
-                        child</label>
-                    <div class="grid grid-cols-2 gapx-4 ml-4">
-                        <template x-for="option in tailoringOptions" :key="option">
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" :value="option" x-model="session.tailoring"
-                                    class="form-checkbox h-4 w-4 border-gray-300 rounded" />
-                                <span x-text="option"></span>
-                            </label>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Checkboxes: Activity/Props Used -->
-                <div class="mb-3">
-                    <label class="block text-gray-700 font-bold">Activity/Props Used</label>
-                    <div class="grid grid-cols-2 gapx-4 ml-4">
-                        <template x-for="option in propsOptions" :key="option">
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" :value="option" x-model="session.propsUsed"
-                                    class="form-checkbox h-4 w-4 border-gray-300 rounded" />
-                                <span x-text="option"></span>
-                            </label>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Level of Support -->
-                <div class="mb-3">
-                    <label class="block text-gray-700 font-bold">Level of Support</label>
-                    <div class="flex items-center gap-4">
-                        <small><span class="text-gray-400">Minimal Support</span></small>
-                        <template x-for="(label, supportIndex) in levelOfSupportLabels" :key="supportIndex">
-                            <label class="flex items-center">
-                                <input type="radio" :value="supportIndex + 1" x-model="session.levelOfSupport"
-                                    class="mr-2" />
-                                <span x-text="label"></span>
-                            </label>
-                        </template>
-                        <small><span class="text-gray-400">Maximum Support</span></small>
-                    </div>
-                </div>
-
-                <!-- Child's Capacity -->
-                <div class="mb-3">
-                    <label class="block text-gray-700 font-bold">Child's Capacity</label>
-                    <div class="flex items-center gap-4">
-                        <small><span class="text-gray-400">Not Present</span></small>
-                        <template x-for="(label, capacityIndex) in childCapacityLabels" :key="capacityIndex">
-                            <label class="flex items-center">
-                                <input type="radio" :value="capacityIndex + 1" x-model="session.childCapacity"
-                                    class="mr-2" />
-                                <span x-text="label"></span>
-                            </label>
-                        </template>
-                        <small><span class="text-gray-400">Present most/all of the time</span></small>
-                    </div>
-                </div>
-            </div>
-        </template>
-
-
-        <!-- Plan of Care Input Field -->
-        <div x-show="repeatCount>0" class="mt-3">
-            <div class="my-3">
-                <label for="planOfCare" class="block text-gray-700 font-bold">Plan of Care</label>
-                <select id="planOfCare" class="w-full border border-gray-300 rounded p-2"
-                    x-model="$store.appStore.formData.planOfCare">
-                    <option value="" disabled selected>Select Plan of Care</option>
-                    <template x-for="option in planOfCareOptions" :key="option">
-                        <option :value="option" x-text="option"></option>
-                    </template>
-                </select>
-            </div>
-
-            <div class="flex items-center mb-4">
-                <input x-model="$store.appStore.formData.verified" type="checkbox">
-                <span>&nbsp&nbspI hereby certify that all this information is accurate and authorize my signature to be
-                    placed on the session note that will be generated.</span>
-            </div>
-
-            <!-- Submit Button -->
-            <button class="bg-blue-500 text-white font-bold py-2 px-4 rounded w-full mt-4"
-                :disabled="!$store.appStore.formData.verified" @click="submitForm">
-                Submit
-            </button>
-        </div>
+    <div x-show="loading['main']"
+      class="absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center bg-opacity-50 bg-gray-200"
+      style="z-index: 50;">
+      <!-- SVG Spinner -->
+      <svg class="animate-spin h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"></circle>
+        <path d="M4 12a8 8 0 1 1 8 8" stroke="currentColor"></path>
+      </svg>
     </div>
+
+    <!-- Main Card -->
+    <div>
+      <div class="mb-3">
+        <label for="patient" class="block text-gray-700 font-bold">Patient ID</label>
+        <select id="patient" class="w-full border border-gray-300 rounded p-2"
+          x-model="$store.appStore.formData.patientId">
+          <option selected value="" disabled>Select a Patient</option>
+          <template x-for="patient in $store.appStore.patients" :key="patient.id">
+            <option :value="patient.id" x-text="patient.id + ' - ' + patient.name"></option>
+          </template>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="dateOfService" class="block text-gray-700 font-bold">Date of Service</label>
+        <input type="date" id="dateOfService" x-model="$store.appStore.formData.dateOfService"
+          class="border border-gray-300 rounded p-2 w-full" />
+      </div>
+
+
+      <div class="mb-3">
+        <label for="placeOfServices" class="block text-gray-700 font-bold">Place Of Services</label>
+        <select id="placeOfServices" class="not-select2 w-full border border-gray-300 rounded p-2"
+          x-model="$store.appStore.formData.placeOfServices">
+          <option value="" selected disabled>Please Select</option>
+          <option value="Home">Home</option>
+          <option value="Community">Community</option>
+        </select>
+      </div>
+
+      <div class="flex flex-wrap gap-4 mb-3">
+        <div class="flex-1">
+          <label for="startTime" class="block text-gray-700 font-bold text-sm">Session Start Time</label>
+          <input type="time" id="startTime" class="w-full border border-gray-300 rounded p-2"
+            :readonly="$store.appStore.formData.startTime != '' && $store.appStore.formData.startTime<$store.appStore.formData.endTime"
+            :class="($store.appStore.formData.startTime && $store.appStore.formData.startTime<$store.appStore.formData.endTime) ? 'bg-gray-100':''"
+            x-model="$store.appStore.formData.startTime" @change="calculateSessionDuration()" />
+        </div>
+        <div class="flex-1">
+          <label for="endTime" class="block text-gray-700 font-bold text-sm">Session End Time</label>
+          <input type="time" id="endTime" class="w-full border border-gray-300 rounded p-2"
+            :readonly="$store.appStore.formData.endTime != '' && $store.appStore.formData.startTime<$store.appStore.formData.endTime"
+            :class="($store.appStore.formData.endTime && $store.appStore.formData.startTime<$store.appStore.formData.endTime)? 'bg-gray-100':''"
+            x-model="$store.appStore.formData.endTime" @change="calculateSessionDuration()" />
+        </div>
+        <div class="flex-1">
+          <label class="block text-gray-700 font-bold text-sm">Total Duration</label>
+          <input type="text" class="w-full border border-gray-300 rounded p-2 bg-gray-100"
+            x-model="$store.appStore.formData.duration" readonly />
+        </div>
+      </div>
+    </div>
+
+    <div x-show="$store.appStore.formData.patientId && $store.appStore.patients">
+
+      <!-- Dynamically Generated Content -->
+      <template x-for="(session, index) in $store.appStore.sessionData" :key="index" x-init="$watch('$store.appStore.sessionData', function(value) {
+          if (value.length > 0) {
+              $store.appStore.sessionData[value.length - 1].endTime = $store.appStore.formData.endTime;
+          }
+      })">
+        <div class="relative border-2 rounded-lg border-gray-300 mt-4 p-3">
+
+          <!-- Overlay (shown when session.isShowing is false) -->
+          <div class="absolute inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-10"
+            x-show="!session.isShowing" style="pointer-events: all;">
+            <span class="text-white font-bold text-lg">Segment is Locked</span>
+          </div>
+
+          <!-- Section Header -->
+          <div class="mb-2">
+            <h3 class="text-lg font-bold">
+              <span x-text="'Session ' + (index + 1)"></span>
+            </h3>
+          </div>
+
+          <!-- Start and End Time Inputs -->
+          <div class="flex">
+            <!-- Start Time -->
+            <div class="flex-1 mb-3 mr-1">
+              <label class="block text-gray-700 font-bold">Start Time</label>
+              <input type="time" class="w-full border border-gray-300 rounded p-2 bg-gray-100"
+                x-model="session.startTime" @change="validateSessions(session, index)" />
+              <small x-show="!session.startTime" class="text-red-500">Start time is required.</small>
+            </div>
+
+            <!-- End Time -->
+            <div class="flex-1 mb-3 ml-1">
+              <label class="block text-gray-700 font-bold">End Time</label>
+              <input :disabled="(index+1) == $store.appStore.sessionData.length" type="time" class="w-full border border-gray-300 rounded p-2" x-model="session.endTime"
+                @change="validateSessions(session, index)" />
+              <small x-show="!session.endTime" class="text-red-500">End time must be later
+                than start time.</small>
+            </div>
+          </div>
+
+
+          <!-- Dropdown for Long Term Goals -->
+          <div class="mb-3">
+            <label class="block text-gray-700 font-bold">Long Term Goals</label>
+            <select :disabled="loading['shortTermGoals']" :id="'longTermGoals-' + index"
+              class="not-select2 w-full border border-gray-300 rounded p-2" x-model="session.longTermGoal"
+              @change="fetchShortTermGoals(session,index)">
+              <option value="" disabled>Select a Long Term Goal</option>
+              <template x-for="(goal, goalIndex) in longTermGoalNames" :key="goalIndex">
+                <option :class="goalIndex%2==0? 'bg-gray-300': ''" :value="goal.id"
+                  x-text="goal.shortCode + ' - ' + goal.goalName"></option>
+              </template>
+            </select>
+            <small x-show="!session.longTermGoal" class="text-red-500">Long Term Goal is required.</small>
+          </div>
+
+          <!-- Dropdown for Short Term Goals -->
+          <div class="mb-4">
+            <div class="flex">
+              <label :for="'shortTermGoals-' + index" class="block text-gray-700 font-bold">Short Term
+                Goals</label>
+              <div x-show="loading['shortTermGoals']">
+                <div x-html="loadingSvg"></div>
+              </div>
+              <div x-show="patientIdNotFound">
+                <small><span class="font-bold px-4 text-red-600">Please Select Patient!</span></small>
+              </div>
+
+            </div>
+            <!-- <label class="block text-gray-700 font-bold">Short Term Goals</label> -->
+            <select :disabled="loading['shortTermGoals']" :id="'shortTermGoals-' + index"
+              class="not-select2 w-full border border-gray-300 rounded p-2" @change="validateSessions(session, index)"
+              x-model="session.shortTermGoal">
+              <option value="" selected disabled>Select a Short Term Goal</option>
+              <template x-for="(goal, goalIndex) in shortTermGoalNames[index]" :key="goalIndex">
+                <option :class="goalIndex%2==0? 'bg-gray-300': ''" :value="goal.id" x-text="goal.text"
+                  :title="goal.text"></option>
+              </template>
+            </select>
+            <small x-show="!session.shortTermGoal" class="text-red-500">Short Term Goal is required.</small>
+          </div>
+
+          <!-- Checkboxes: Tailoring Interaction -->
+          <div class="mb-3">
+            <div class="flex">
+              <div class="flex-1 mb-3 mr-1">
+                <label class="block text-gray-700 font-bold">What I did to tailor the interaction for the
+                  child</label>
+              </div>
+              <div class="flex-1 mb-3 mr-1">
+                <small x-show="session.tailoring.length == 0" class="text-red-500">At least one option needed to be
+                  selected.</small>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-0 ml-4">
+              <template x-for="(option, i) in tailoringOptions" :key="i">
+                <label class="flex items-center space-x-2">
+                  <input type="checkbox" :value="i" x-model="session.tailoring"
+                    @change="validateSessions(session, index)" class="form-checkbox h-4 w-4 border-gray-300 rounded" />
+                  <span x-text="option"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+
+          <!-- Checkboxes: Activity/Props Used -->
+          <div class="mb-3">
+            <div class="flex">
+              <div class="flex-1 mb-3 mr-1">
+                <label class="block text-gray-700 font-bold">Activity/Props Used</label>
+              </div>
+              <div class="flex-1 mb-3 mr-1">
+                <small x-show="session.propsUsed.length == 0" class="text-red-500">At least one option needed to be
+                  selected.</small>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-0 ml-4">
+              <template x-for="(option,i) in propsOptions" :key="i">
+                <label class="flex items-center space-x-2">
+                  <input type="checkbox" :value="i" x-model="session.propsUsed"
+                    class="form-checkbox h-4 w-4 border-gray-300 rounded" @change="validateSessions(session, index)" />
+                  <span x-text="option"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+
+          <!-- Level of Support -->
+          <div class="mb-3">
+            <div class="flex">
+              <div class="flex-1">
+                <label class="block text-gray-700 font-bold">Level of Support</label>
+              </div>
+              <div class="flex-1">
+                <!-- Validation Message -->
+                <small x-show="!session.levelOfSupport" class="text-red-500">Level of Support is required.</small>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <!-- Label for Minimal Support -->
+              <small><span class="text-gray-400">Minimal Support</span></small>
+
+              <!-- Radio Button Group -->
+              <template x-for="(label, supportIndex) in levelOfSupportLabels" :key="supportIndex">
+                <label class="flex items-center">
+                  <!-- Unique 'name' ensures independent radio groups for each session -->
+                  <input type="radio" :name="'levelOfSupport-' + index" :value="supportIndex + 1"
+                    x-model="session.levelOfSupport" class="mr-2" @change="validateSessions(session, index)" />
+                  <span x-text="label"></span>
+                </label>
+              </template>
+
+              <!-- Label for Maximum Support -->
+              <small><span class="text-gray-400">Maximum Support</span></small>
+
+
+            </div>
+          </div>
+
+          <!-- Child's Capacity -->
+          <div class="mb-3">
+            <div class="flex">
+              <div class="flex-1">
+                <label class="block text-gray-700 font-bold">Child's Capacity</label>
+              </div>
+              <div class="flex-1">
+                <!-- Validation Message -->
+                <small x-show="!session.childCapacity" class="text-red-500">Child's Capacity is required.</small>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <!-- Label for Not Present -->
+              <small><span class="text-gray-400">Not Present</span></small>
+
+              <!-- Radio Button Group -->
+              <template x-for="(label, capacityIndex) in childCapacityLabels" :key="capacityIndex">
+                <label class="flex items-center">
+                  <input type="radio" :name="'childCapacity-' + index" :value="capacityIndex"
+                    x-model="session.childCapacity" class="mr-2" @change="validateSessions(session, index)" />
+                  <span x-text="label"></span>
+                </label>
+              </template>
+
+              <!-- Label for Present Most/All of the Time -->
+              <small><span class="text-gray-400">Present most/all of the time</span></small>
+
+            </div>
+          </div>
+
+          <!-- Outcome -->
+          <div class="mb-3">
+            <div class="flex items-center gap-4">
+              <label class="block text-gray-700 font-bold">Outcome</label>
+              <small x-show="!session.outcome" class="text-red-500">Outcome is required.</small>
+            </div>
+            <input type="text" @change="validateSessions(session, index)" x-model="session.outcome"
+              class="mr-1 w-full border border-gray-300 rounded p-2" />
+          </div>
+        </div>
+      </template>
+
+      <!-- Plan of Care Input Field -->
+      <div x-show="$store.appStore.sessionData.length>0" class="mt-3">
+        <div class="my-3">
+          <label for="planOfCare" class="block text-gray-700 font-bold">Plan of Care</label>
+          <select id="planOfCare" class="not-select2 w-full border border-gray-300 rounded p-2"
+            x-model="$store.appStore.formData.planOfCare">
+            <option value="" disabled selected>Select Plan of Care</option>
+            <template x-for="option in planOfCareOptions" :key="option">
+              <option :value="option" x-text="option"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="flex items-center mb-4">
+          <input x-model="$store.appStore.formData.verified" type="checkbox">
+          <span>&nbsp&nbspI hereby certify that all this information is accurate and authorize my signature to be
+            placed on the session note that will be generated.</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button class="bg-blue-500 text-white font-bold py-2 px-4 rounded w-full mt-4"
+          :disabled="!$store.appStore.formData.verified || $store.appStore.sessionData.some(session => !session.validated)"
+          @click="submitForm">
+          Submit
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 
 <script>
-    function sessionForm() {
-        return {
-            repeatCount: 0,
-            duration: 0,
-            tailoringOptions: [],
-            propsOptions: [],
-            planOfCareOptions: [],
-            patientIdNotFound: false,
-            longTermGoalNames: [],
-            shortTermGoalNames: {},
-            childCapacityLabels: [0, 1, 2],
-            levelOfSupportLabels: [1, 2, 3],
-            loading: {},
-            initializeDropdowns() {
-                google.script.run
-                    .withSuccessHandler((data) => {
-                        this.tailoringOptions = data["What I did to tailor the interaction for the child"] || [];
-                        this.propsOptions = data["Activity/Props Used"] || [];
-                        this.longTermGoalNames = data["longTermGoals"] || [];
-                        this.planOfCareOptions = data["Plan of Care"] || [];
-                    })
-                    .withFailureHandler((error) => {
-                        console.error("Failed to fetch dropdown data:", error);
-                    })
-                    .getDropdownData();
-            },
+  function sessionForm() {
+    return {
+      repeatCount: 0,
+      forceUpdate: 0,
+      duration: 0,
+      tailoringOptions: [],
+      propsOptions: [],
+      planOfCareOptions: [],
+      patientIdNotFound: false,
+      shortTermGoalNotFound: false,
+      longTermGoalNames: [],
+      shortTermGoalNames: {},
+      AllGoals: {},
+      requiredSessionFields: ["outcome", "startTime", "endTime", "longTermGoal", "shortTermGoal", "tailoring", "propsUsed", "levelOfSupport", "childCapacity"],
+      childCapacityLabels: [0, 1, 2],
+      levelOfSupportLabels: [1, 2, 3],
+      loading: {},
+      initializeDropdowns() {
+        google.script.run
+          .withSuccessHandler((data) => {
+            this.tailoringOptions = data["What I did to tailor the interaction for the child"] || [];
+            this.propsOptions = data["Activity/Props Used"] || [];
+            this.longTermGoalNames = data["longTermGoals"] || [];
+            this.planOfCareOptions = data["Plan of Care"] || [];
+          })
+          .withFailureHandler((error) => {
+            console.error("Failed to fetch dropdown data:", error);
+          })
+          .getDropdownData();
+      },
+      validateSessions(sessionI, indexI) {
+        if (sessionI.endTime <= sessionI.startTime) {
+          sessionI.endTimeError = true;
+        } else {
+          sessionI.endTimeError = false;
+        }
+        this.$store.appStore.sessionData[indexI].shortTermGoal = $("#shortTermGoals-" + indexI).val();
+        this.$store.appStore.sessionData.forEach((session, index) => {
+          if (index > 0) {
+            session.startTime = this.$store.appStore.sessionData[index - 1].endTime || null;
+          }
+          session.validated = this.requiredSessionFields.every(function (field) {
+            if (field == 'tailoring' || field == "propsUsed") {
+              return session[field].length > 0
+            }
+            return session[field]
+          });
 
-            fetchPatients() {
-                try {
-                    if (Alpine.store("appStore").isULoggedIn) console.log();
+          if (index + 1 < this.$store.appStore.sessionData.length) {
+            this.$store.appStore.sessionData[index + 1].isShowing = session.validated;
+          }
+        });
 
-                    const loggedInUser = JSON.parse(Alpine.store("appStore").loggedUser);
-                    console.log(loggedInUser.value);
+        this.$store.appStore.sessionData = [...this.$store.appStore.sessionData];
+      },
 
-                    const therapistId = loggedInUser?.value?.id; // Extract therapist ID
-                    console.log(therapistId);
+      fetchPatients() {
+        try {
+          if (!Alpine.store("appStore").loggedUser) return;
 
-                    if (!therapistId) {
-                        this.showError('Therapist ID Error', 'Therapist ID not found. Please log in again.');
-                        return;
-                    }
+          const loggedInUser = JSON.parse(Alpine.store("appStore").loggedUser);
+          console.log(loggedInUser.value);
 
-                    // Start loading indicator
-                    this.loading['main'] = true;
+          const therapistId = loggedInUser?.value?.id; // Extract therapist ID
+          console.log(therapistId);
 
-                    // Call the server-side function
-                    google.script.run
-                        .withSuccessHandler((data) => {
-                            this.loading['main'] = false;
-                            console.log(Alpine.store("appStore").patients);
-                            Alpine.store("appStore").patients = data; // Assign fetched patients to the component state
-                        })
-                        .withFailureHandler((error) => {
-                            this.loading['main'] = false;
-                            this.showError('Fetching Patients Failed', error.message);
-                            console.error('Error fetching patients:', error);
-                        })
-                        .getPatients(therapistId); // Pass therapist ID to the server function
+          if (!therapistId) {
+            showError('Therapist ID Error', 'Therapist ID not found. Please log in again.');
+            return;
+          }
 
-                } catch (error) {
-                    this.loading['main'] = false;
-                    this.showError('Unexpected Error', error.message);
-                    console.error('Unexpected error occurred:', error);
+          // Start loading indicator
+          this.loading['main'] = true;
+
+          // Call the server-side function
+          google.script.run
+            .withSuccessHandler((data) => {
+              this.loading['main'] = false;
+              console.log(Alpine.store("appStore").patients);
+              Alpine.store("appStore").patients = data; // Assign fetched patients to the component state
+            })
+            .withFailureHandler((error) => {
+              this.loading['main'] = false;
+              showError('Fetching Patients Failed', error.message);
+              console.error('Error fetching patients:', error);
+            })
+            .getPatients(therapistId); // Pass therapist ID to the server function
+
+        } catch (error) {
+          this.loading['main'] = false;
+          showError('Unexpected Error', error.message);
+          console.error('Unexpected error occurred:', error);
+        }
+      },
+
+      fetchShortTermGoals(session, index) {
+        try {
+          var sessionIndex = session.id;
+          var longTermGoal = session.longTermGoal;
+          var patientId = $('#patient').val();
+          this.shortTermGoalNames[sessionIndex] = [];
+          if (this.AllGoals[longTermGoal] && this.AllGoals[longTermGoal].length > 0) {
+            var selectedLongTermGoals = [];
+            var selectedShortTermGoals = [];
+
+            for (let i = 0; i < this.$store.appStore.sessionData.length; i++) {
+              var selectedLongTermGoal = $(`#longTermGoals-${i}`).val();
+              var selectedShortTermGoal = $(`#shortTermGoals-${i}`).val();
+              if (selectedLongTermGoal == longTermGoal && selectedShortTermGoal) selectedShortTermGoals.push(parseInt(selectedShortTermGoal));
+            }
+            console.log(selectedShortTermGoals)
+            const filteredGoals = this.AllGoals[longTermGoal].filter(goal =>
+              !selectedShortTermGoals.includes(goal.id)
+            );
+            this.shortTermGoalNames[sessionIndex] = filteredGoals
+            return
+          } else {
+            this.loading['shortTermGoals'] = true;
+          }
+
+          // Check if patient ID is provided
+          if (!patientId) {
+            this.patientIdNotFound = true;
+          } else {
+            this.patientIdNotFound = false;
+          }
+
+          // Fetch short-term goals if patient ID and long-term goal are available
+          if (patientId && longTermGoal) {
+            console.log('Fetching short-term goals...');
+            google.script.run
+              .withSuccessHandler((goals) => {
+                console.log('goals')
+                console.log(goals)
+                this.AllGoals[longTermGoal] = goals
+                // Gather selected long-term and short-term goals
+                const selectedLongTermGoals = [];
+                const selectedShortTermGoals = [];
+
+                // Loop through all long-term and short-term selectors based on sessionData length
+                for (let i = 0; i < this.$store.appStore.sessionData.length; i++) {
+                  const selectedLongTermGoal = $(`#longTermGoals-${i}`).val();
+                  const selectedShortTermGoal = $(`#shortTermGoals-${i}`).val();
+                  if (selectedLongTermGoal == longTermGoal && selectedShortTermGoal) selectedShortTermGoals.push(parseInt(selectedShortTermGoal));
                 }
-            },
+                console.log(selectedShortTermGoals)
+                // Remove goals that match any already selected long or short-term goals
+                const filteredGoals = goals.filter(goal =>
+                  !selectedShortTermGoals.includes(goal.id)
+                );
 
-            fetchShortTermGoals(session) {
-                try {
-                    // Show loading spinner for short-term goals
-                    this.loading['shortTermGoals'] = true;
+                // Update the short-term goal names
+                this.shortTermGoalNames[sessionIndex] = filteredGoals || [];
 
-                    var sessionIndex = session.id;
-                    var longTermGoal = session.longTermGoal;
-                    var patientId = $('#patient').val();
-                    this.shortTermGoalNames[sessionIndex] = [];  // Clear existing short-term goals for this session
-                    console.log(longTermGoal);
-                    console.log(patientId);
 
-                    // Check if patient ID is provided
-                    if (!patientId) {
-                        this.patientIdNotFound = true;
-                    } else {
-                        this.patientIdNotFound = false;
-                    }
+                // this.shortTermGoalNames[sessionIndex] = goals || [];
+                this.loading['shortTermGoals'] = false;
+              })
+              .withFailureHandler((error) => {
+                this.loading['shortTermGoals'] = false;
+                showError('Error Fetching Short-Term Goals', error.message);
+                console.error('Error fetching short-term goals:', error);
+              })
+              .getShortTermGoals(patientId, longTermGoal);
 
-                    // Fetch short-term goals if patient ID and long-term goal are available
-                    if (patientId && longTermGoal) {
-                        console.log('Fetching short-term goals...');
-                        google.script.run
-                            .withSuccessHandler((goals) => {
-                                this.shortTermGoalNames[sessionIndex] = goals || []; // Store fetched short-term goals
-                                this.loading['shortTermGoals'] = false; // Hide the spinner after loading
-                            })
-                            .withFailureHandler((error) => {
-                                // Log and display error if fetching short-term goals fails
-                                this.loading['shortTermGoals'] = false; // Hide the spinner on failure
-                                this.showError('Error Fetching Short-Term Goals', error.message);
-                                console.error('Error fetching short-term goals:', error);
-                            })
-                            .getShortTermGoals(patientId, longTermGoal); // Call the server function with patient ID and long-term goal
+          } else {
+            console.log('No patient ID or long-term goal. Skipping short-term goals fetch.');
+            this.loading['shortTermGoals'] = false; // Hide the spinner if no data
+          }
+        } catch (error) {
+          // Handle any unexpected errors
+          this.loading['shortTermGoals'] = false;
+          showError('Unexpected Error', error.message);
+          console.error('Unexpected error:', error);
+        }
+        this.validateSessions(session, index)
+      },
+      calculateSessionDuration() {
+          if (!$('#patient').val() || !this.$store.appStore.patients) {
+              showError("Patient is not selected", "Select a patient first to continue");
+              return;
+          }
 
-                    } else {
-                        console.log('No patient ID or long-term goal. Skipping short-term goals fetch.');
-                        this.loading['shortTermGoals'] = false; // Hide the spinner if no data
-                    }
-                } catch (error) {
-                    // Handle any unexpected errors
-                    this.loading['shortTermGoals'] = false;
-                    this.showError('Unexpected Error', error.message);
-                    console.error('Unexpected error:', error);
-                }
-            },
-            calculateSessionDuration() {
-                let startTime = this.$store.appStore.formData.startTime;
-                let endTime = this.$store.appStore.formData.endTime;
+          this.$store.appStore.formData.patientId = $('#patient').val();
+          let startTime = this.$store.appStore.formData.startTime;
+          let endTime = this.$store.appStore.formData.endTime;
 
-                if (startTime && endTime) {
-                    // Parse start and end times
-                    const [startHours, startMinutes] = startTime.split(':').map(Number);
-                    let [endHours, endMinutes] = endTime.split(':').map(Number);
+          if (startTime > endTime && (startTime && endTime)) {
+              showError("Duration Error!", "End Time must be later than Start Time");
+              return;
+          }
 
-                    // Calculate duration in minutes
-                    let durationMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+          if (startTime && endTime) {
+              const [startHours, startMinutes] = startTime.split(':').map(Number);
+              const [endHours, endMinutes] = endTime.split(':').map(Number);
 
-                    // Round duration down to the nearest 15 minutes
-                    durationMinutes = Math.floor(durationMinutes / 15) * 15;
+              // Calculate total duration in minutes
+              let durationMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
 
-                    // Recalculate the adjusted end time
-                    endHours = Math.floor((startHours * 60 + startMinutes + durationMinutes) / 60);
-                    endMinutes = (startMinutes + durationMinutes) % 60;
+              // If duration is between 8 and 15 minutes, round up to 15 minutes
+              if (durationMinutes > 8 && durationMinutes <= 15) {
+                  durationMinutes = 15;
+              } else {
+                  // Otherwise, round to the nearest 15-minute increment
+                  if (durationMinutes % 15 <= 7) {
+                      durationMinutes = Math.ceil(durationMinutes / 15) * 15;
+                  } else {
+                      durationMinutes = Math.floor(durationMinutes / 15) * 15;
+                  }
+              }
 
-                    // Format adjusted end time
-                    endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-                    this.$store.appStore.formData.endTime = endTime; // Update the end time in the store
+              // Update end time based on the rounded duration
+              const totalMinutes = startHours * 60 + startMinutes + durationMinutes;
+              const updatedEndHours = Math.floor(totalMinutes / 60);
+              const updatedEndMinutes = totalMinutes % 60;
+              endTime = `${String(updatedEndHours).padStart(2, '0')}:${String(updatedEndMinutes).padStart(2, '0')}`;
+              this.$store.appStore.formData.endTime = endTime;
 
-                    // Convert the adjusted duration back to hours and minutes
-                    const hours = Math.floor(durationMinutes / 60);
-                    const minutes = durationMinutes % 60;
+              // Calculate hours and minutes for the session duration
+              const hours = Math.floor(durationMinutes / 60);
+              const minutes = durationMinutes % 60;
 
-                    this.$store.appStore.formData.duration = `${hours}h ${minutes}m`;
-                    this.duration = `${hours}h ${minutes}m`;
+              this.$store.appStore.formData.duration = `${hours}h ${minutes}m`;
+              this.duration = `${hours}h ${minutes}m`;
 
-                    // Calculate repeat count using Math.ceil to handle partial hours
-                    this.repeatCount = Math.ceil(durationMinutes / 60);
+              // Calculate repeat count based on the duration
+              this.repeatCount = Math.ceil(durationMinutes / 60);
+              this.$store.appStore.sessionData = Array.from({ length: this.repeatCount }, (_, index) => ({
+                  id: index,
+                  startTime: index === 0 ? this.$store.appStore.formData.startTime : '',
+                  endTime: '',
+                  longTermGoal: '',
+                  shortTermGoal: '',
+                  tailoring: [],
+                  propsUsed: [],
+                  levelOfSupport: null,
+                  childCapacity: null,
+                  outcome: '',
+                  isShowing: index === 0,
+                  validated: index === 0 && this.$store.appStore.formData.startTime ? true : false
+              }));
+          }
+      },
 
-                    // Generate session data based on repeat count
-                    this.$store.appStore.sessionData = Array.from({ length: this.repeatCount }, (_, index) => ({
-                        id: index,
-                        longTermGoal: '',
-                        shortTermGoal: '',
-                        tailoring: [],
-                        propsUsed: [],
-                        levelOfSupport: null,
-                        childCapacity: null
-                    }));
-                }
-            },
+      submitForm() {
+        //showSuccess('Success!', 'Form submitted successfully!');
+        Alpine.store("appStore").formData.patientId = $('#patient').val()
+        Alpine.store("appStore").formData.placeOfServices = $('#placeOfServices').val()
+        if (!$('#patient').val()) {
+          showError("Patient is not selected", "Select a patient first to continue");
+          return
+        }
+        if (!$('#placeOfServices').val()) {
+          showError("Place of Services is not selected", "Select a place of services first to continue");
+          return
+        }
+        var submissionData = {}
+        submissionData.formData = JSON.parse(JSON.stringify(Alpine.store("appStore").formData))
+        submissionData.sessionData = JSON.parse(JSON.stringify(Alpine.store("appStore").sessionData))
+        if (!Alpine.store("appStore").loggedUser) {
+          showError("Opps! your information is not found ", "Therapist not found. Refresh the page or Try to re-login");
+          return
+        };
+        const loggedInUser = JSON.parse(Alpine.store("appStore").loggedUser);
+        console.log(loggedInUser.value);
+        const therapistId = loggedInUser?.value?.id;
+        submissionData.formData.therapistId = therapistId
 
-            // Submit the form
-            submitForm() {
-                showSuccess('Success!', 'Form submitted successfully!');
-                Alpine.store("appStore").formData.patientId = $('#patient').val()
-                Alpine.store("appStore").formData.placeOfServices = $('#placeOfServices').val()
-                console.log(JSON.stringify(Alpine.store("appStore").formData));
-                console.log(JSON.stringify(Alpine.store("appStore").sessionData));
-            },
+        console.log(JSON.stringify(submissionData));
+        //send it to the backend code.gs function here
+        this.loading['main'] = true;
+        google.script.run
+          .withSuccessHandler((data) => {
+            this.loading['main'] = false;
+            showSuccess('Success!', 'Form submitted successfully!');
+          })
+          .withFailureHandler((error) => {
+            this.loading['main'] = false;
+            showError('Error Submitting Form', error.message);
+            console.error('Detailed error from backend:', error);
+          })
+          .submitForm(JSON.stringify(submissionData));
 
-            initData() {
-                this.loading['main'] = true;
-                this.fetchPatients()
-                this.initializeDropdowns()
+      },
 
-            },
+      initData() {
+        this.loading['main'] = true;
+        this.fetchPatients()
+        this.initializeDropdowns()
+      },
 
-            loadingSvg: `<svg version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+      loadingSvg: `<svg version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
      width="80px" height="80px" viewBox="0 0 40 40" enable-background="new 0 0 40 40" xml:space="preserve" style=" height: 25px; ">
     <path opacity="0.2" fill="#000" d="M20.201,5.169c-8.254,0-14.946,6.692-14.946,14.946c0,8.255,6.692,14.946,14.946,14.946
       s14.946-6.691,14.946-14.946C35.146,11.861,28.455,5.169,20.201,5.169z M20.201,31.749c-6.425,0-11.634-5.208-11.634-11.634
@@ -376,6 +610,6 @@
         repeatCount="indefinite"/>
       </path>
     </svg>`
-        };
-    }
+    };
+  }
 </script>
