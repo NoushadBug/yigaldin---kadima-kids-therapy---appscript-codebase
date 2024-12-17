@@ -503,15 +503,10 @@
               let durationMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
 
               // If duration is between 8 and 15 minutes, round up to 15 minutes
-              if (durationMinutes > 8 && durationMinutes <= 15) {
-                  durationMinutes = 15;
+              if (durationMinutes % 15 >= 8) {
+                  durationMinutes = Math.ceil(durationMinutes / 15) * 15;
               } else {
-                  // Otherwise, round to the nearest 15-minute increment
-                  if (durationMinutes % 15 <= 7) {
-                      durationMinutes = Math.ceil(durationMinutes / 15) * 15;
-                  } else {
-                      durationMinutes = Math.floor(durationMinutes / 15) * 15;
-                  }
+                  durationMinutes = Math.floor(durationMinutes / 15) * 15;
               }
 
               // Update end time based on the rounded duration
