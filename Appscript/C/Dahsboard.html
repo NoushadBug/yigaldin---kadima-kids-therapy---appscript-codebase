@@ -124,6 +124,21 @@
     $("select:not('.not-select2')").select2({
       allowClear: true
     });
+      $('#patient').change(function () {
+      const selectedPatient = $(this).val(); // Get the selected value
+      if (selectedPatient) {
+        console.log('Selected Patient ID:', selectedPatient);
+
+        Alpine.store("appStore").formData.dateOfService= new Date().toISOString().split('T')[0],
+        Alpine.store("appStore").formData.placeOfServices= "";
+        Alpine.store("appStore").formData.startTime= "";
+        Alpine.store("appStore").formData.endTime= "";
+        Alpine.store("appStore").formData.duration= "";
+        Alpine.store("appStore").formData.planOfCare="";
+        Alpine.store("appStore").formData.verified= false;
+        Alpine.store("appStore").sessionData= []
+      }
+    });
   </script>
 
 

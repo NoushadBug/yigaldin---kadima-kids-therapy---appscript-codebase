@@ -17,8 +17,11 @@
     <div>
       <div class="mb-3">
         <label for="patient" class="block text-gray-700 font-bold">Patient ID</label>
-        <select id="patient" class="w-full border border-gray-300 rounded p-2"
-          x-model="$store.appStore.formData.patientId">
+        <select
+          id="patient"
+          class="w-full border border-gray-300 rounded p-2"
+          x-model="$store.appStore.formData.patientId"
+          required>
           <option selected value="" disabled>Select a Patient</option>
           <template x-for="patient in $store.appStore.patients" :key="patient.id">
             <option :value="patient.id" x-text="patient.id + ' - ' + patient.name"></option>
@@ -311,6 +314,7 @@
 
 
 <script>
+
   function sessionForm() {
     return {
       repeatCount: 0,

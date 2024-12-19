@@ -1,184 +1,184 @@
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      checkLogin();
-      // Update the Alpine.js state
-      syncAlpineData();
-    });
-  
-    function toggleBtnLoader(selector, turnOff = false) {
-      const Btn = document.querySelector(selector);
-      const BtnSvg = document.querySelector(selector + " svg").parentElement;
-      if (!turnOff) {
-        Btn.classList.add("disabled");
-        BtnSvg.classList.remove("hidden");
-      } else {
-        Btn.classList.remove("disabled");
-        BtnSvg.classList.add("hidden");
-      }
+  document.addEventListener("DOMContentLoaded", function () {
+    checkLogin();
+    // Update the Alpine.js state
+    syncAlpineData();
+  });
+
+  function toggleBtnLoader(selector, turnOff = false) {
+    const Btn = document.querySelector(selector);
+    const BtnSvg = document.querySelector(selector + " svg").parentElement;
+    if (!turnOff) {
+      Btn.classList.add("disabled");
+      BtnSvg.classList.remove("hidden");
+    } else {
+      Btn.classList.remove("disabled");
+      BtnSvg.classList.add("hidden");
     }
-  
-    function login() {
-      Alpine.store("appStore", JSON.parse(JSON.stringify(initialData)));
-      toggleBtnLoader("#login-btn");
-      const emailEl = document.getElementById("email");
-      const passwordEl = document.getElementById("password");
-      const email = emailEl.value;
-      const password = passwordEl.value;
-      if (!email || !password) {
-        toggleBtnLoader("#login-btn", true);
-        toastr.warning("You must input both email and password!");
-      } else {
-        google.script.run
-          .withSuccessHandler(function (user) {
-            emailEl.value = "";
-            passwordEl.value = "";
-            toggleBtnLoader("#login-btn", true);
-            if (user) {
-              // Select all elements with the class 'unauthorizedComponent'
-              const unauthorizedElements = document.querySelectorAll(
-                ".unauthorizedComponent",
+  }
+
+  function login() {
+    Alpine.store("appStore", JSON.parse(JSON.stringify(initialData)));
+    toggleBtnLoader("#login-btn");
+    const emailEl = document.getElementById("email");
+    const passwordEl = document.getElementById("password");
+    const email = emailEl.value;
+    const password = passwordEl.value;
+    if (!email || !password) {
+      toggleBtnLoader("#login-btn", true);
+      toastr.warning("You must input both email and password!");
+    } else {
+      google.script.run
+        .withSuccessHandler(function (user) {
+          emailEl.value = "";
+          passwordEl.value = "";
+          toggleBtnLoader("#login-btn", true);
+          if (user) {
+            // Select all elements with the class 'unauthorizedComponent'
+            const unauthorizedElements = document.querySelectorAll(
+              ".unauthorizedComponent",
+            );
+
+            // Loop through each element and replace the class
+            unauthorizedElements.forEach((element) => {
+              element.classList.replace(
+                "unauthorizedComponent",
+                "authorizedComponentxx",
               );
-  
-              // Loop through each element and replace the class
-              unauthorizedElements.forEach((element) => {
-                element.classList.replace(
-                  "unauthorizedComponent",
-                  "authorizedComponentxx",
-                );
-              });
-              setLocalStorage("loggedInUser", user, 5);
-              console.log('user')
-              console.log(user)
-              if(user.id == "admin"){
-                Alpine.store("appStore").isAdmin = true
-              }else{
-                Alpine.store("appStore").isAdmin = false
-              }
-              
-              console.log(localStorage);
-              document.querySelector(".userName").innerText = user.name;
-              document.querySelector("main").classList.remove("main-center");
-              sessionForm().initData()
-              // Update the Alpine.js state
-              syncAlpineData();
-            } else {
-              toastr.error("Invalid login");
+            });
+            setLocalStorage("loggedInUser", user, 5);
+            console.log('user')
+            console.log(user)
+            if(user.id == "admin"){
+              Alpine.store("appStore").isAdmin = true
+            }else{
+              Alpine.store("appStore").isAdmin = false
             }
-          })
-          .login(email, password);
-      }
+            
+            console.log(localStorage);
+            document.querySelector(".userName").innerText = user.name;
+            document.querySelector("main").classList.remove("main-center");
+            sessionForm().initData()
+            // Update the Alpine.js state
+            syncAlpineData();
+          } else {
+            toastr.error("Invalid login");
+          }
+        })
+        .login(email, password);
     }
-  
-    function formatDateForDataTable(dateString) {
-      try {
-        // Split the input date string into day, month, and year
-        const parts = dateString.split("/");
-        const day = parts[0];
-        const month = parts[1];
-        const year = parts[2];
-  
-        // Return the formatted date string in YYYYMMDD format
-        return `${year}${month.padStart(2, "0")}${day.padStart(2, "0")}` || "";
-      } catch (e) {
-        return "";
-      }
+  }
+
+  function formatDateForDataTable(dateString) {
+    try {
+      // Split the input date string into day, month, and year
+      const parts = dateString.split("/");
+      const day = parts[0];
+      const month = parts[1];
+      const year = parts[2];
+
+      // Return the formatted date string in YYYYMMDD format
+      return `${year}${month.padStart(2, "0")}${day.padStart(2, "0")}` || "";
+    } catch (e) {
+      return "";
     }
+  }
+
   
-    
+
+  function changeView(viewName) {
+    Alpine.store("appStore").promotionLoaded = false;
+    Alpine.store("appStore").promotionCreateView = false;
+    Alpine.store("appStore").promotionRequestView = false;
+    Alpine.store("appStore")[viewName] = true;
+  }
+
   
-    function changeView(viewName) {
-      Alpine.store("appStore").promotionLoaded = false;
-      Alpine.store("appStore").promotionCreateView = false;
-      Alpine.store("appStore").promotionRequestView = false;
-      Alpine.store("appStore")[viewName] = true;
-    }
-  
-    
-    function logout() {
-      // Remove the user data from localStorage
-      localStorage.removeItem("loggedInUser");
+  function logout() {
+    // Remove the user data from localStorage
+    localStorage.removeItem("loggedInUser");
+    document.querySelector("main").classList.add("main-center");
+    syncAlpineData();
+  }
+
+  function syncAlpineData() {
+    Alpine.store("appStore").isULoggedIn =
+      localStorage.getItem("loggedInUser") !== null;
+    Alpine.store("appStore").isUNotLoggedIn =
+      localStorage.getItem("loggedInUser") === null;
+  }
+
+  function checkLogin() {
+    const user = getLocalStorage("loggedInUser");
+    if (user) {
+      document.querySelector(".userName").innerText = user.name;
+      document.querySelector("main").classList.remove("main-center");
+    } else {
       document.querySelector("main").classList.add("main-center");
-      syncAlpineData();
     }
-  
-    function syncAlpineData() {
-      Alpine.store("appStore").isULoggedIn =
-        localStorage.getItem("loggedInUser") !== null;
-      Alpine.store("appStore").isUNotLoggedIn =
-        localStorage.getItem("loggedInUser") === null;
-    }
-  
-    function checkLogin() {
-      const user = getLocalStorage("loggedInUser");
-      if (user) {
-        document.querySelector(".userName").innerText = user.name;
-        document.querySelector("main").classList.remove("main-center");
-      } else {
-        document.querySelector("main").classList.add("main-center");
-      }
-    }
-  
-  
-    function setLocalStorage(key, value, hours) {
-      const now = new Date().getTime();
-      const expirationTime = now + hours * 60 * 60 * 1000;
-      const data = {
-        value: value,
-        expiresAt: expirationTime,
-      };
-      // Alpine.store("appStore")["loggedUser"] = JSON.stringify(data)
-      localStorage.setItem(key, JSON.stringify(data));
-    }
-  
-    function getLocalStorage(key) {
-      const data = JSON.parse(localStorage.getItem(key));
-      if (!data) {
-        return null;
-      }
-      const now = new Date().getTime();
-      if (now > data.expiresAt) {
-        localStorage.removeItem(key);
-        return null;
-      }
-      return data.value;
-    }
-  
-    function deleteLocalStorage(key) {
-      localStorage.removeItem(key);
-    }
-  
-    // Toastr configuration
-    toastr.options = {
-      closeButton: true,
-      debug: false,
-      newestOnTop: false,
-      progressBar: true,
-      positionClass: "toast-top-right",
-      preventDuplicates: false,
-      onclick: null,
-      showDuration: "300",
-      hideDuration: "1000",
-      timeOut: "5000",
-      extendedTimeOut: "1000",
-      showEasing: "swing",
-      hideEasing: "linear",
-      showMethod: "fadeIn",
-      hideMethod: "fadeOut",
+  }
+
+
+  function setLocalStorage(key, value, hours) {
+    const now = new Date().getTime();
+    const expirationTime = now + hours * 60 * 60 * 1000;
+    const data = {
+      value: value,
+      expiresAt: expirationTime,
     };
-  
-    function showSuccess(head, msg) {
-      toastr.success(msg, head);
+    // Alpine.store("appStore")["loggedUser"] = JSON.stringify(data)
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  function getLocalStorage(key) {
+    const data = JSON.parse(localStorage.getItem(key));
+    if (!data) {
+      return null;
     }
-  
-    function showError(head, msg) {
-      toastr.error(msg, head);
+    const now = new Date().getTime();
+    if (now > data.expiresAt) {
+      localStorage.removeItem(key);
+      return null;
     }
-  
-    function showInfo(head, msg) {
-      toastr.info(msg, head);
-    }
-  
-    function showWarning(head, msg) {
-      toastr.warning(msg, head);
-    }
-  </script>
+    return data.value;
+  }
+
+  function deleteLocalStorage(key) {
+    localStorage.removeItem(key);
+  }
+
+  // Toastr configuration
+  toastr.options = {
+    closeButton: true,
+    debug: false,
+    newestOnTop: false,
+    progressBar: true,
+    positionClass: "toast-top-right",
+    preventDuplicates: false,
+    onclick: null,
+    showDuration: "300",
+    hideDuration: "1000",
+    timeOut: "5000",
+    extendedTimeOut: "1000",
+    showEasing: "swing",
+    hideEasing: "linear",
+    showMethod: "fadeIn",
+    hideMethod: "fadeOut",
+  };
+
+  function showSuccess(head, msg) {
+    toastr.success(msg, head);
+  }
+
+  function showError(head, msg) {
+    toastr.error(msg, head);
+  }
+
+  function showInfo(head, msg) {
+    toastr.info(msg, head);
+  }
+
+  function showWarning(head, msg) {
+    toastr.warning(msg, head);
+  }
+</script>
