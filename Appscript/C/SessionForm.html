@@ -264,6 +264,7 @@
             <div class="flex items-center gap-4">
               <label class="block text-gray-700 font-bold">Outcome</label>
               <small x-show="!session.outcome" class="text-red-500">Outcome is required.</small>
+              <small x-show="session.outcome.length<60" class="text-red-500">Minimum 60 characters are required.</small>
             </div>
             <input type="text" @change="validateSessions(session, index)" x-model="session.outcome"
               class="mr-1 w-full border border-gray-300 rounded p-2" />
@@ -345,6 +346,9 @@
             session.startTime = this.$store.appStore.sessionData[index - 1].endTime || null;
           }
           session.validated = this.requiredSessionFields.every(function (field) {
+            if (field == 'outcome') {
+              return session[field] && session[field].length > 60
+            }
             if (field == 'tailoring' || field == "propsUsed") {
               return session[field].length > 0
             }
@@ -367,6 +371,7 @@
           console.log(loggedInUser.value);
 
           const therapistId = loggedInUser?.value?.id; // Extract therapist ID
+          if(loggedInUser?.value?.id == 'admin') return
           console.log(therapistId);
 
           if (!therapistId) {
@@ -572,6 +577,22 @@
         google.script.run
           .withSuccessHandler((data) => {
             this.loading['main'] = false;
+            const appStore = Alpine.store("appStore");
+            appStore.formData = {
+                dateOfService: new Date().toISOString().split('T')[0],
+                patientId: "",
+                placeOfServices: "",
+                startTime: "",
+                endTime: "",
+                duration: "",
+                planOfCare: "",
+                verified: false
+            };
+            appStore.sessionData = [];
+            $('select').each(function() {
+                $(this).trigger('change');
+            });
+
             showSuccess('Success!', 'Form submitted successfully!');
           })
           .withFailureHandler((error) => {
@@ -584,6 +605,12 @@
       },
 
       initData() {
+        if (!Alpine.store("appStore").loggedUser) return;
+        const loggedInUser = JSON.parse(Alpine.store("appStore").loggedUser);
+        console.log(loggedInUser.value);
+        const therapistId = loggedInUser?.value?.id; // Extract therapist ID
+        if(loggedInUser?.value?.id == 'admin') return
+        
         this.loading['main'] = true;
         this.fetchPatients()
         this.initializeDropdowns()

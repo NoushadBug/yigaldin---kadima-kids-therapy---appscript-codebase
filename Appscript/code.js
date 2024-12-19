@@ -1,6 +1,9 @@
 
 PATIENTS_SHEET_NAME = "Patients"
 THERAPISTS_SHEET_NAME = "Therapists"
+SHORT_TERM_GOALS_SHEET = 'Short Term Goals'
+LONG_TERM_GOALS_SHEET = 'Long Term Goals'
+
 var patientsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PATIENTS_SHEET_NAME);
 var therapistsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(THERAPISTS_SHEET_NAME);
 
@@ -17,6 +20,16 @@ function include(filename) {
 }
 
 function login(email, password) {
+    // Check admin credentials first
+    if (isAdminLogin(email, password)) {
+        return {
+            id: "admin",
+            name: "Administrator",
+            email: email
+        };
+    }
+
+    // Check therapist credentials
     var data = therapistsSheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
         if (data[i][2].trim() === email.trim() && String(data[i][3]).trim() === password.trim() && String(data[i][4]).trim() === "Active") {
@@ -31,19 +44,100 @@ function login(email, password) {
     return null;
 }
 
+function getTherapists() {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(THERAPISTS_SHEET_NAME);
+    if (!sheet) throw new Error('Sheet "Therapists" not found.');
+    return sheet.getDataRange().getValues().slice(1); // Exclude header row
+}
+
+function savePatient(patientData) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Sheets
+    const patientSheet = ss.getSheetByName(PATIENTS_SHEET_NAME);
+    if (!patientSheet) throw new Error(`Sheet "${PATIENTS_SHEET_NAME}" not found.`);
+
+    const shortTermSheet = ss.getSheetByName(SHORT_TERM_GOALS_SHEET);
+    if (!shortTermSheet) throw new Error(`Sheet "${SHORT_TERM_GOALS_SHEET}" not found.`);
+
+    // 1. Generate new Patient ID
+    const lastPatientRow = patientSheet.getLastRow();
+    const lastPatientId = lastPatientRow > 1 ? patientSheet.getRange(lastPatientRow, 1).getValue() : "P0";
+    const newPatientId = "P" + (parseInt(lastPatientId.replace("P", ""), 10) + 1);
+
+    // 2. Format DOB (MM/DD/YYYY)
+    const dob = new Date(patientData.dob);
+    const formattedDob = Utilities.formatDate(dob, Session.getScriptTimeZone(), "MM/dd/yyyy");
+
+    // 3. Prepare row data for Patients Sheet
+    const patientRow = [
+        newPatientId,
+        patientData.name,
+        patientData.email,
+        formattedDob,
+        patientData.subjective,
+        patientData.objective,
+        patientData.otherNotes,
+        patientData.assignedTherapists.join(","), // Comma-separated therapist IDs
+        "Active" // Status field
+    ];
+    patientSheet.appendRow(patientRow);
+
+    // 4. Handle Short-Term Goals
+    const longTermGoalHeaders = shortTermSheet.getRange(1, 2, 1, shortTermSheet.getLastColumn() - 1).getValues()[0]; // Get all headers except "Patient ID"
+    const row = Array(longTermGoalHeaders.length + 1).fill(""); // Create empty row matching column length
+    row[0] = newPatientId; // First column is Patient ID
+
+    // Organize goals by Long-Term Goal
+    const goalsByLongTerm = {};
+    patientData.shortTermGoals.forEach((goalData) => {
+        if (!goalsByLongTerm[goalData.longTermGoal]) {
+            goalsByLongTerm[goalData.longTermGoal] = [];
+        }
+        goalsByLongTerm[goalData.longTermGoal].push(goalData.goal);
+    });
+
+    // Write goals into the appropriate columns
+    for (const [longTermGoal, goals] of Object.entries(goalsByLongTerm)) {
+        const longTermGoalIndex = longTermGoalHeaders.indexOf(longTermGoal); // Match long-term goal ID with headers
+        if (longTermGoalIndex !== -1) {
+            row[longTermGoalIndex + 1] = goals.map((goal, index) => `${index + 1}. ${goal}`).join("\n");
+        }
+    }
+
+    // 5. Append the row to Short-Term Goals Sheet
+    shortTermSheet.appendRow(row);
+
+    return { success: true, message: `Patient ${newPatientId} saved successfully!` };
+}
+
+
+
+function isAdminLogin(email, password) {
+    const adminUsername = getSettingValue("Admin Username");
+    const adminPassword = getSettingValue("Admin Password");
+
+    return email.trim() === adminUsername.trim() && password.trim() === adminPassword.trim();
+}
+
+
 
 function getPatients(therapistId) {
-    SpreadsheetApp.flush()
+    SpreadsheetApp.flush();
     const data = patientsSheet.getDataRange().getValues();
 
-    // Skip header row and filter rows based on therapistId (column H, index 7)
-    const patients = data.slice(1).filter(row => row[7].trim() === therapistId.trim()).map(row => ({
+    // Skip header row and filter rows based on therapistId
+    const patients = data.slice(1).filter(row => {
+        const assignedTherapists = row[7] ? row[7].split(',').map(id => id.trim()) : []; // Split and trim therapist IDs
+        return assignedTherapists.includes(therapistId.trim()); // Check if therapistId exists in the list
+    }).map(row => ({
         id: row[0],        // ID
         name: row[1],      // Patient Name
     }));
 
     return patients; // Return the filtered list of patients
 }
+
 
 
 // Google Apps Script function to fetch goals for a specific patient
@@ -88,8 +182,8 @@ function getDropdownData() {
         });
     }
 
-    // Fetch data from "Long Term Goals" sheet
-    const longTermGoalsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Long Term Goals");
+    // Fetch data from LONG_TERM_GOALS_SHEET sheet
+    const longTermGoalsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LONG_TERM_GOALS_SHEET);
     const longTermData = longTermGoalsSheet.getDataRange().getValues();
 
     if (longTermData.length < 2) return { error: "No Long Term Goals data available" };
@@ -146,7 +240,7 @@ function getShortTermGoalsObj(patientId, longTermGoalId) {
 
         if (goalCell) {
             goalCell.split("\n").forEach(goal => {
-                const match = goal.match(/^(\d+)〕(.+)$/); // Match format "1〕text"
+                const match = goal.match(/^(\d+). (.+)$/); // Match format "1. text"
                 if (match) {
                     const id = parseInt(match[1], 10);
                     const text = match[2].trim();
@@ -192,7 +286,7 @@ function getShortTermGoals(patientId, longTermGoalId) {
         if (goalCell) {
             // Process the cell contents and extract the goals in a single pass
             goalCell.split("\n").forEach(goal => {
-                const match = goal.match(/^(\d+)〕(.+)$/); // Match format "1〕text"
+                const match = goal.match(/^(\d+). (.+)$/); // Match format "1. text"
                 if (match) {
                     matchingGoals.push({ id: parseInt(match[1], 10), text: match[2].trim() });
                 }
@@ -283,7 +377,7 @@ function mapIdsToNames(ids, columnLetter) {
         .filter(name => name); // Remove empty rows
 
     // Map IDs to names
-    const mappedNames = ids.map(id => names[id - 1] || `Unknown (ID: ${id})`);
+    const mappedNames = ids.map(id => names[id] || `Unknown (ID: ${id})`);
     return mappedNames;
 }
 function convertTo12HourFormat(time24) {
@@ -299,7 +393,7 @@ function convertTo12HourFormat(time24) {
 }
 
 function test() {
-    console.log(getShortTermGoalsObj("P1", "LT1")["1"]['text'])
+    console.log(getLongTermGoals())
     return
     try {
         // Open the document by ID
@@ -326,7 +420,7 @@ function test() {
 
 
 // ##### FORM SUBMISSION CODE ##### //
-function submitForm(formData = '{"formData":{"dateOfService":"2024-12-17","patientId":"P1","placeOfServices":"Home","startTime":"15:23","endTime":"17:38","duration":"2h 15m","planOfCare":"It is recommended that treatment continue to target current goals.","verified":true,"therapistId":"T0"},"sessionData":[{"id":0,"startTime":"15:23","endTime":"16:24","longTermGoal":"LT1","shortTermGoal":"1","tailoring":["2"],"propsUsed":["4","7","1"],"levelOfSupport":"2","childCapacity":"2","outcome":"trrr","isShowing":true,"validated":true,"endTimeError":false},{"id":1,"startTime":"16:24","endTime":"17:24","longTermGoal":"LT2","shortTermGoal":"1","tailoring":["2","4","6","9","7","5"],"propsUsed":["7","3"],"levelOfSupport":"2","childCapacity":"2","outcome":"er","isShowing":true,"validated":true,"endTimeError":false},{"id":2,"startTime":"17:24","endTime":"18:24","longTermGoal":"LT2","shortTermGoal":"3","tailoring":["2"],"propsUsed":["9"],"levelOfSupport":"3","childCapacity":"0","outcome":"yrdf","isShowing":true,"validated":true,"endTimeError":false}]}') {
+function submitForm(formData = '{"formData":{"dateOfService":"2024-12-17","patientId":"P1","placeOfServices":"Community","startTime":"15:23","endTime":"17:38","duration":"2h 15m","planOfCare":"It is recommended that treatment continue to target current goals.","verified":true,"therapistId":"T0"},"sessionData":[{"id":0,"startTime":"15:23","endTime":"16:24","longTermGoal":"LT1","shortTermGoal":"1","tailoring":["2"],"propsUsed":["4","7","1"],"levelOfSupport":"2","childCapacity":"2","outcome":"trrr","isShowing":true,"validated":true,"endTimeError":false},{"id":1,"startTime":"16:24","endTime":"17:24","longTermGoal":"LT2","shortTermGoal":"1","tailoring":["2","4","6","9","7","5"],"propsUsed":["7","3"],"levelOfSupport":"2","childCapacity":"2","outcome":"er","isShowing":true,"validated":true,"endTimeError":false},{"id":2,"startTime":"17:24","endTime":"18:24","longTermGoal":"LT2","shortTermGoal":"3","tailoring":["2"],"propsUsed":["9"],"levelOfSupport":"3","childCapacity":"0","outcome":"yrdf","isShowing":true,"validated":true,"endTimeError":false}]}') {
     try {
         const data = JSON.parse(formData);
         const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sessions");
@@ -348,7 +442,8 @@ function submitForm(formData = '{"formData":{"dateOfService":"2024-12-17","patie
             data.formData.planOfCare,
             JSON.stringify(data.sessionData),
             "Submitted",   // Submitted → Pending → Approved/Rejected
-            timestamp
+            timestamp,
+            data.formData.dateOfService
         ]);
 
         // Fetch patient details
@@ -357,6 +452,10 @@ function submitForm(formData = '{"formData":{"dateOfService":"2024-12-17","patie
         var result = generateSessionDoc(formData, timestamp, nextId, patientDetails, therapistName)
         const generatedDocFileID = result.docId;
         organizeFiles(generatedDocFileID, formData, patientDetails, therapistName);
+        // Update the sheet with the URL of the generated document
+        const docUrl = `https://docs.google.com/document/d/${generatedDocFileID}/edit`;
+        const row = sheet.createTextFinder(nextId).matchEntireCell(true).findNext().getRow();
+        sheet.getRange(row, 13).setValue(docUrl);
         sendEmailAfterDocCreation(result.docId, result.timestamp);
         return `Session ${nextId} submitted successfully!`; // Success message
     } catch (error) {
@@ -392,7 +491,7 @@ function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, th
             "##therapistName##": therapistName,
             "##dateOfService##": dateOfService,
             "##clientDOB##": patientDetails["DOB"],
-            "##placeOfServices##": placeOfServices,
+            "##placeOfServices##": placeOfServices == "Community"? "Office": placeOfServices,
             "##endTime##": convertTo12HourFormat(endTime),
             "##subjective##": patientDetails["Subjective"],
             "##objective##": patientDetails["Objective"],
@@ -432,7 +531,7 @@ function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, th
         if (segmentTable) segmentTable.removeFromParent();
 
         // Add "Plan of Care" and "Clinician Signature" after the table
-        body.appendParagraph(`Plan of care: ${formData.planOfCare || "No plan of care provided"}.`);
+        body.appendParagraph(`Plan of care: ${planOfCare || "No plan of care provided"}`);
         body.appendParagraph("Clinician Signature:");
         body.appendParagraph("##signature##");
         doc.saveAndClose();

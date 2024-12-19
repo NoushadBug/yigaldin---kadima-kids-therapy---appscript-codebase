@@ -97,7 +97,8 @@
 
     <div class="w-full h-screen overflow-x-hidden border-t flex flex-col">
       <main class="main-center w-full flex-grow px-6 py-2">
-        <?!= include('C/SessionForm'); ?>
+        <div x-show="!($store.appStore.isAdmin)"> <?!= include('C/SessionForm'); ?> </div>
+        <div x-show="($store.appStore.isAdmin)"> <?!= include('C/AddPatientForm'); ?> </div>
 
         <!-- jQuery -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>

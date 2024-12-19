@@ -1,18 +1,14 @@
 <script>
-  document.addEventListener("alpine:init", () => {
-    Alpine.store("appStore", {
+  var initialData = {
       serverLoading: false,
       openModal: false,
       loggedUser: localStorage.getItem("loggedInUser"),
       isULoggedIn: localStorage.getItem("loggedInUser") !== null,
       isUNotLoggedIn: !this.isULoggedIn,
-      printStatus: function () {
-        console.log(this.isULoggedIn);
-      },
-      
-      
+      isAdmin: false,
       patients: [],
       shortTermGoals: [],
+      selectedShortTermGoals: {},
 
       formData: {
         dateOfService: new Date().toISOString().split('T')[0],
@@ -28,6 +24,8 @@
         
       ]
 
-    });
+    }
+  document.addEventListener("alpine:init", () => {
+    Alpine.store("appStore", JSON.parse(JSON.stringify(initialData)));
   });
 </script>
