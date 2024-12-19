@@ -317,8 +317,8 @@ function getPatientDetails(patientId) {
     const patientSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Patients");
     if (!patientSheet) throw new Error('Sheet "Patients" not found.');
 
-    const headers = patientSheet.getDataRange().getValues()[0]; // Get column headers
-    const rows = patientSheet.getDataRange().getValues().slice(1); // Skip the header row
+    const headers = patientSheet.getDataRange().getDisplayValues()[0]; // Get column headers
+    const rows = patientSheet.getDataRange().getDisplayValues().slice(1); // Skip the header row
     const patientRow = rows.find(row => row[0] === patientId); // Search for the patient by ID
 
     if (!patientRow) throw new Error(`Patient ID "${patientId}" not found.`);
@@ -420,7 +420,8 @@ function test() {
 
 
 // ##### FORM SUBMISSION CODE ##### //
-function submitForm(formData = '{"formData":{"dateOfService":"2024-12-17","patientId":"P1","placeOfServices":"Community","startTime":"15:23","endTime":"17:38","duration":"2h 15m","planOfCare":"It is recommended that treatment continue to target current goals.","verified":true,"therapistId":"T0"},"sessionData":[{"id":0,"startTime":"15:23","endTime":"16:24","longTermGoal":"LT1","shortTermGoal":"1","tailoring":["2"],"propsUsed":["4","7","1"],"levelOfSupport":"2","childCapacity":"2","outcome":"trrr","isShowing":true,"validated":true,"endTimeError":false},{"id":1,"startTime":"16:24","endTime":"17:24","longTermGoal":"LT2","shortTermGoal":"1","tailoring":["2","4","6","9","7","5"],"propsUsed":["7","3"],"levelOfSupport":"2","childCapacity":"2","outcome":"er","isShowing":true,"validated":true,"endTimeError":false},{"id":2,"startTime":"17:24","endTime":"18:24","longTermGoal":"LT2","shortTermGoal":"3","tailoring":["2"],"propsUsed":["9"],"levelOfSupport":"3","childCapacity":"0","outcome":"yrdf","isShowing":true,"validated":true,"endTimeError":false}]}') {
+// function submitForm(formData = '{"formData":{"dateOfService":"2024-12-17","patientId":"P1","placeOfServices":"Community","startTime":"15:23","endTime":"17:38","duration":"2h 15m","planOfCare":"It is recommended that treatment continue to target current goals.","verified":true,"therapistId":"T0"},"sessionData":[{"id":0,"startTime":"15:23","endTime":"16:24","longTermGoal":"LT1","shortTermGoal":"1","tailoring":["2"],"propsUsed":["4","7","1"],"levelOfSupport":"2","childCapacity":"2","outcome":"trrr","isShowing":true,"validated":true,"endTimeError":false},{"id":1,"startTime":"16:24","endTime":"17:24","longTermGoal":"LT2","shortTermGoal":"1","tailoring":["2","4","6","9","7","5"],"propsUsed":["7","3"],"levelOfSupport":"2","childCapacity":"2","outcome":"er","isShowing":true,"validated":true,"endTimeError":false},{"id":2,"startTime":"17:24","endTime":"18:24","longTermGoal":"LT2","shortTermGoal":"3","tailoring":["2"],"propsUsed":["9"],"levelOfSupport":"3","childCapacity":"0","outcome":"yrdf","isShowing":true,"validated":true,"endTimeError":false}]}') {
+function submitForm(formData = '{"formData":{"dateOfService":"2024-12-19","patientId":"P4","placeOfServices":"Community","startTime":"12:26","endTime":"13:26","duration":"1h 0m","planOfCare":"It is recommended that a reevaluation is done in order to determine appropriate goals.","verified":true,"therapistId":"T0"},"sessionData":[{"id":0,"startTime":"12:26","endTime":"13:26","longTermGoal":"LT1","shortTermGoal":"1","tailoring":["0"],"propsUsed":["4"],"levelOfSupport":"1","childCapacity":"1","outcome":"planOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCareplanOfCare","isShowing":true,"validated":true,"endTimeError":false}]}') {
     try {
         const data = JSON.parse(formData);
         const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sessions");

@@ -275,14 +275,21 @@
       <!-- Plan of Care Input Field -->
       <div x-show="$store.appStore.sessionData.length>0" class="mt-3">
         <div class="my-3">
-          <label for="planOfCare" class="block text-gray-700 font-bold">Plan of Care</label>
-          <select id="planOfCare" class="not-select2 w-full border border-gray-300 rounded p-2"
-            x-model="$store.appStore.formData.planOfCare">
-            <option value="" disabled selected>Select Plan of Care</option>
+          <label for="planOfCare" class="block text-gray-700 font-bold mb-2">Plan of Care</label>
+          <div id="planOfCare" class="space-y-2">
             <template x-for="option in planOfCareOptions" :key="option">
-              <option :value="option" x-text="option"></option>
+              <label class="inline-flex items-center">
+                <input 
+                  type="radio" 
+                  name="planOfCare" 
+                  :value="option" 
+                  x-model="$store.appStore.formData.planOfCare" 
+                  required
+                  class="form-radio text-blue-500 border-gray-300 focus:ring focus:ring-blue-500">
+                <span class="ml-2" x-text="option"></span>
+              </label>
             </template>
-          </select>
+          </div>
         </div>
 
         <div class="flex items-center mb-4">
@@ -293,7 +300,7 @@
 
         <!-- Submit Button -->
         <button class="bg-blue-500 text-white font-bold py-2 px-4 rounded w-full mt-4"
-          :disabled="!$store.appStore.formData.verified || $store.appStore.sessionData.some(session => !session.validated)"
+          :disabled="!$store.appStore.formData.verified || !$store.appStore.formData.planOfCare || $store.appStore.sessionData.some(session => !session.validated)"
           @click="submitForm">
           Submit
         </button>
