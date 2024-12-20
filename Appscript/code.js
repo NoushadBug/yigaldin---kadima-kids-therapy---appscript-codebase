@@ -15,6 +15,55 @@ function doGet() {
         .setTitle('Session Notes :: Kadima Kids Therapy');
 }
 
+function AddSignature() {
+    var formName = "Add Therapist Signature";
+    var template = HtmlService.createTemplateFromFile('UploadTherapistSignature');
+    const therapists = getTherapistsList(); // Get therapists for select options
+    template.therapists = JSON.stringify(therapists); // Pass therapists to the HTML template
+    var html = template.evaluate().setTitle(formName).setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    html.setWidth(500).setHeight(350);
+    SpreadsheetApp.getUi().showModalDialog(html, formName);
+}
+
+function getTherapistsList() {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Therapists'); // Replace with the actual name of your therapist sheet
+    if (!sheet) throw new Error('Therapists sheet not found.');
+
+    const data = sheet.getDataRange().getValues();
+    return data.slice(1).map(row => ({ id: row[0], name: row[1] })); // Assuming ID is column A, Name is column B
+}
+
+function uploadTherapistSignature(therapistId, fileData) {
+    const folderName = "Session Note - Therapists Signatures";
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const therapistSheet = ss.getSheetByName("Therapists");
+    if (!therapistSheet) throw new Error('Therapists sheet not found.');
+
+    // Locate or create the folder
+    let folder;
+    const folders = DriveApp.getFoldersByName(folderName);
+    if (folders.hasNext()) {
+        folder = folders.next();
+    } else {
+        folder = DriveApp.createFolder(folderName);
+    }
+
+    // Upload file
+    const blob = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.mimeType, fileData.name);
+    const file = folder.createFile(blob);
+    file.setName(`${therapistId}-${fileData.name}`);
+
+    // Update the therapist row in the sheet
+    const rows = therapistSheet.getDataRange().getValues();
+    const therapistRowIndex = rows.findIndex(row => row[0].trim() === therapistId.trim());
+    if (therapistRowIndex === -1) throw new Error('Therapist not found.');
+
+    therapistSheet.getRange(therapistRowIndex + 1, 6).setValue(file.getId()); // Column F (6th column)
+    return { success: true, message: 'Signature uploaded successfully!' };
+}
+
+
+
 function include(filename) {
     return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
@@ -465,11 +514,24 @@ function submitForm(formData = '{"formData":{"dateOfService":"2024-12-19","patie
     }
 }
 
+function getTherapistSignatureFileId(therapistId) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Therapists"); // Replace with your sheet name
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][0] === therapistId) { // Assuming column A has therapist IDs
+            return data[i][5]; // Assuming column F has file IDs
+        }
+    }
+    return null; // Return null if no match is found
+}
+
+
 function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, therapistName) {
     try {
         const data = JSON.parse(formData);
         const { patientId, therapistId, dateOfService, placeOfServices, startTime, endTime, planOfCare } = data.formData;
         var sessionData = data.sessionData;
+
         // Validate sessionData
         if (!Array.isArray(sessionData) || sessionData.length === 0) {
             throw new Error("Session data is missing or invalid.");
@@ -482,7 +544,7 @@ function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, th
         if (!templateFile) throw new Error("Template file not found. Check template ID in settings.");
 
         // Copy the template and rename it
-        const newDocId = templateFile.makeCopy(`${nextId} - ${timestamp}`).getId();
+        const newDocId = templateFile.makeCopy(`${nextId} - ${data.formData.dateOfService}`).getId();
         const doc = DocumentApp.openById(newDocId);
         var body = doc.getActiveTab().asDocumentTab().getBody();
 
@@ -492,7 +554,7 @@ function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, th
             "##therapistName##": therapistName,
             "##dateOfService##": dateOfService,
             "##clientDOB##": patientDetails["DOB"],
-            "##placeOfServices##": placeOfServices == "Community"? "Office": placeOfServices,
+            "##placeOfServices##": placeOfServices == "Community" ? "Office" : placeOfServices,
             "##endTime##": convertTo12HourFormat(endTime),
             "##subjective##": patientDetails["Subjective"],
             "##objective##": patientDetails["Objective"],
@@ -503,7 +565,8 @@ function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, th
         for (const [placeholder, value] of Object.entries(placeholders)) {
             body.replaceText(placeholder, value || ""); // Replace with value or empty string
         }
-        var longTermGoals = getLongTermGoals()
+
+        var longTermGoals = getLongTermGoals();
         // Handle sessionData for the dynamic table duplication
         sessionData.forEach((session, index) => {
             handleSessionSegment(body, patientId, session, (index + 1), longTermGoals); // Pass body, session data, and segment index
@@ -535,22 +598,43 @@ function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, th
         body.appendParagraph("Clinician Signature:");
         body.appendParagraph("##signature##");
 
-        // Fetch the signature from the therapist's row in the data
-        // const therapistSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(THERAPISTS_SHEET_NAME);
-        // if (!therapistSheet) throw new Error(`Therapists sheet "${THERAPISTS_SHEET_NAME}" not found.`);
+        // Fetch signature image from Drive
+        const signatureFileId = getTherapistSignatureFileId(therapistId); // This function gets the file ID from the F column
+        if (!signatureFileId) throw new Error("Therapist signature not found.");
 
-        // const rows = therapistSheet.getDataRange().getValues();
-        // const therapistRow = rows.find(row => row[0].trim() === therapistId.trim());
-        // if (!therapistRow) throw new Error("Therapist not found in the sheet.");
+        const file = DriveApp.getFileById(signatureFileId);
+        const signatureBlob = file.getBlob();
 
-        // const signatureCell = therapistRow[5]; // Column F
-        // if (signatureCell) {
-        //     const signatureBlob = DriveApp.getFileById(signatureCell).getBlob();
-        //     const signatureImage = body.appendImage(signatureBlob);
-        //     signatureImage.setWidth(150).setHeight(75); // Adjust the dimensions as needed
-        // } else {
-        //     body.appendParagraph("Signature image not available.");
-        // }
+        // Check if the blob has a valid MIME type
+        const mimeType = file.getMimeType();
+        if (!mimeType || !mimeType.startsWith('image/')) {
+            throw new Error("The file is not a valid image or has an invalid MIME type.");
+        }
+
+        const signatureImage = body.findText("##signature##");
+
+        if (signatureImage) {
+            const signatureElement = signatureImage.getElement();
+            const parent = signatureElement.getParent();
+            signatureElement.removeFromParent(); // Remove the placeholder
+
+            // Insert the image into the document temporarily
+            const tempImage = parent.asParagraph().appendInlineImage(signatureBlob);
+
+            // Get the original dimensions of the image
+            const imgWidth = tempImage.getWidth();
+            const imgHeight = tempImage.getHeight();
+
+            // Calculate aspect ratio
+            const desiredWidth = 144; // 2 inches = 144 points
+            const aspectRatio = imgHeight / imgWidth;
+            const desiredHeight = desiredWidth * aspectRatio;
+
+            // Set the dimensions of the inserted image
+            tempImage.setWidth(desiredWidth).setHeight(desiredHeight);
+        }
+
+
 
         doc.saveAndClose();
         return { docId: newDocId, timestamp: timestamp };
@@ -559,6 +643,7 @@ function generateSessionDoc(formData = {}, timestamp, nextId, patientDetails, th
         throw new Error(`Failed to generate session document. Please check template and input data.: ${error.message}`);
     }
 }
+
 
 function handleSessionSegment(body, patientId, session, index, longTermGoals) {
     const searchResult = body.findText("##segmentIndex##");
@@ -597,8 +682,8 @@ function handleSessionSegment(body, patientId, session, index, longTermGoals) {
     if (session.childCapacity == "2") {
         childGrade = "Present most or all of the time"
     }
-    const interactions = mapIdsToNames(session.tailoring, "A"); 
-    const props = mapIdsToNames(session.propsUsed, "B"); 
+    const interactions = mapIdsToNames(session.tailoring, "A");
+    const props = mapIdsToNames(session.propsUsed, "B");
 
     // Get the long-term goal name using the ID from session
     const longTermGoalName = longTermGoals[session.longTermGoal] || "Unknown Goal";

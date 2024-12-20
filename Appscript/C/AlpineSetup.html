@@ -1,28 +1,28 @@
 <script>
   var initialData = {
-    serverLoading: false,
-    openModal: false,
-    loggedUser: localStorage.getItem("loggedInUser") || null,
-    isULoggedIn: localStorage.getItem("loggedInUser") !== null,
-    isUNotLoggedIn: !this.isULoggedIn,
-    isAdmin: JSON.parse(localStorage.getItem("loggedInUser"))?.value?.id == 'admin' || false,
-    patients: [],
-    shortTermGoals: [],
-    selectedShortTermGoals: {},
+      serverLoading: false,
+      openModal: false,
+      loggedUser: localStorage.getItem("loggedInUser") || null,
+      isULoggedIn: localStorage.getItem("loggedInUser") !== null,
+      isUNotLoggedIn: !this.isULoggedIn,
+      isAdmin: JSON.parse(localStorage.getItem("loggedInUser"))?.value?.id == 'admin' || false,
+      patients: [],
+      shortTermGoals: [],
+      selectedShortTermGoals: {},
 
-    formData: {
-      dateOfService: new Date().toISOString().split('T')[0],
-      patientId: "",
-      placeOfServices: "",
-      startTime: "",
-      endTime: "",
-      duration: "",
-      planOfCare: "",
-      verified: false
-    },
-    sessionData: []
+      formData: {
+        dateOfService: new Date().toISOString().split('T')[0],
+        patientId: "",
+        placeOfServices: "",
+        startTime: "",
+        endTime: "",
+        duration: "",
+        planOfCare:"",
+        verified: false
+      },
+      sessionData: []
 
-  }
+    }
   document.addEventListener("alpine:init", () => {
     Alpine.store("appStore", JSON.parse(JSON.stringify(initialData)));
   });
