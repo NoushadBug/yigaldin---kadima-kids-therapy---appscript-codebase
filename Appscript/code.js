@@ -6,6 +6,7 @@ LONG_TERM_GOALS_SHEET = 'Long Term Goals'
 
 var patientsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PATIENTS_SHEET_NAME);
 var therapistsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(THERAPISTS_SHEET_NAME);
+var shortTermGoalsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHORT_TERM_GOALS_SHEET);
 
 function doGet() {
     var html = HtmlService.createTemplateFromFile('C/Dashboard');
@@ -139,20 +140,24 @@ function savePatient(patientData) {
 
     // Organize goals by Long-Term Goal
     const goalsByLongTerm = {};
-    patientData.shortTermGoals.forEach((goalData) => {
-        if (!goalsByLongTerm[goalData.longTermGoal]) {
-            goalsByLongTerm[goalData.longTermGoal] = [];
+
+    // Group short-term goals under their corresponding long-term goals
+    patientData.shortTermGoals.forEach((goalGroup) => {
+        if (!goalsByLongTerm[goalGroup.longTermGoal]) {
+            goalsByLongTerm[goalGroup.longTermGoal] = [];
         }
-        goalsByLongTerm[goalData.longTermGoal].push(goalData.goal);
+        goalsByLongTerm[goalGroup.longTermGoal].push(...goalGroup.goals);
     });
 
     // Write goals into the appropriate columns
     for (const [longTermGoal, goals] of Object.entries(goalsByLongTerm)) {
         const longTermGoalIndex = longTermGoalHeaders.indexOf(longTermGoal); // Match long-term goal ID with headers
         if (longTermGoalIndex !== -1) {
+            // Format each goal with a numbered list
             row[longTermGoalIndex + 1] = goals.map((goal, index) => `${index + 1}. ${goal}`).join("\n");
         }
     }
+
 
     // 5. Append the row to Short-Term Goals Sheet
     shortTermSheet.appendRow(row);
@@ -175,18 +180,108 @@ function getPatients(therapistId) {
     SpreadsheetApp.flush();
     const data = patientsSheet.getDataRange().getValues();
 
-    // Skip header row and filter rows based on therapistId
-    const patients = data.slice(1).filter(row => {
-        const assignedTherapists = row[7] ? row[7].split(',').map(id => id.trim()) : []; // Split and trim therapist IDs
-        return assignedTherapists.includes(therapistId.trim()); // Check if therapistId exists in the list
-    }).map(row => ({
+    // Skip header row
+    const patients = data.slice(1).map(row => ({
         id: row[0],        // ID
         name: row[1],      // Patient Name
+        assignedTherapists: row[7] ? row[7].split(',').map(id => id.trim()) : [] // Split and trim therapist IDs
     }));
 
-    return patients; // Return the filtered list of patients
+    // If therapistId is provided, filter patients; otherwise, return all
+    if (therapistId && therapistId.trim() !== '') {
+        return patients.filter(patient =>
+            patient.assignedTherapists.includes(therapistId.trim())
+        );
+    }
+
+    return patients; // Return all patients if no therapistId is provided
 }
 
+function loadPatientData(patientID) {
+    SpreadsheetApp.flush();
+    if (!patientID) return; // If no patient is selected, return early
+
+    const patientsData = patientsSheet.getRange("A2:I").getDisplayValues(); // Retrieve all patient data
+    const goalsData = shortTermGoalsSheet.getRange("A1:G").getDisplayValues(); // Retrieve all short-term goals data
+    const goalHeaders = goalsData[0]; // The first row in the "Short Term Goals" sheet are the headers (LT1, LT2, etc.)
+
+    // Find the patient data based on patientID
+    const patientRow = patientsData.find(row => row[0] === patientID);
+
+    if (!patientRow) {
+        console.log('Patient not found');
+        return;
+    }
+
+    const patient = {
+        id: patientRow[0],            // ID
+        name: patientRow[1],          // Patient Name
+        email: patientRow[2],         // Email
+        dob: patientRow[3],           // DOB
+        subjective: patientRow[4],    // Subjective
+        objective: patientRow[5],     // Objective
+        other: patientRow[6],         // Other Notes
+        assignedTherapists: patientRow[7] ? patientRow[7].split(',').map(id => id.trim()) : [], // Therapists
+        status: patientRow[8],        // Status
+    };
+
+    // Find the short-term goals for this patient
+    const goalsRow = goalsData.find(row => row[0] === patientID);
+    if (goalsRow) {
+        // Initialize shortTermGoals array
+        patient.shortTermGoals = goalHeaders.slice(1).map((header, index) => {
+            const goalValue = goalsRow[index + 1]; // Get the goal value for the respective long-term goal column
+            const goals = goalValue
+                ? goalValue.trim().split('\n').map(goal => goal.replace(/^\d+\.\s*/, '').trim()) // Remove numbering (e.g., "1. ") and trim
+                : []; // Split goals by new line and remove any leading numbering
+
+            return {
+                longTermGoal: header, // Set the long-term goal name (e.g., LT1, LT2)
+                goals: goals // Set the list of goals
+            };
+        });
+    } else {
+        patient.shortTermGoals = []; // No goals found, initialize as empty
+    }
+
+    console.log(patient);
+    return patient;
+}
+
+function updatePatient(updatedPatient) {
+    if (!updatedPatient || !updatedPatient.id) {
+        throw new Error("Invalid patient data.");
+    }
+
+    const goalsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Short Term Goals");
+    const goalsData = goalsSheet.getRange("A1:G").getValues(); // Retrieve all short-term goals data
+    const goalHeaders = goalsData[0]; // The first row contains the headers (LT1, LT2, etc.)
+    const patientID = updatedPatient.id;
+
+    // Find the row corresponding to the patient's ID
+    const patientRowIndex = goalsData.findIndex(row => row[0] === patientID);
+    if (patientRowIndex === -1) {
+        throw new Error(`Patient with ID ${patientID} not found in Short Term Goals sheet.`);
+    }
+
+    // Build the new row data for the patient
+    const updatedGoalsRow = [patientID]; // Start with the patient ID in column A
+    goalHeaders.slice(1).forEach(header => {
+        const goalGroup = updatedPatient.shortTermGoals.find(goal => goal.longTermGoal === header);
+        if (goalGroup && goalGroup.goals.length > 0) {
+            const numberedGoals = goalGroup.goals.map((goal, index) => `${index + 1}. ${goal}`); // Add numbering
+            updatedGoalsRow.push(numberedGoals.join("\n")); // Join short-term goals with a newline
+        } else {
+            updatedGoalsRow.push(""); // No goals for this long-term goal
+        }
+    });
+
+    // Update the patient's row in the sheet
+    const range = goalsSheet.getRange(patientRowIndex + 1, 1, 1, updatedGoalsRow.length); // Row index is 1-based
+    range.setValues([updatedGoalsRow]);
+
+    return `Patient ${updatedPatient.name} (${patientID}) short-term goals updated successfully.`;
+}
 
 
 // Google Apps Script function to fetch goals for a specific patient
@@ -442,7 +537,7 @@ function convertTo12HourFormat(time24) {
 }
 
 function test() {
-    console.log(getLongTermGoals())
+    console.log(loadPatientData("P3"))
     return
     try {
         // Open the document by ID

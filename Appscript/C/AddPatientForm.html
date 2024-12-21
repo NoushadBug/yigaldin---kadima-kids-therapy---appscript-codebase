@@ -1,56 +1,88 @@
-<div x-data="addPatientForm()" class="p-6 max-w-3xl mx-auto">
-  <div class="bg-white rounded-md shadow-md p-6">
-    <form @submit.prevent="savePatient">
-      <h4 class="font-semibold mb-6 text-2xl">Add Patient</h4>
+<div x-data="{ activeTab: 'addPatient' }" class="p-6 max-w-4xl mx-auto">
+  <div x-show="loading['main']"
+    class="absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center bg-opacity-50 bg-gray-200"
+    style="z-index: 50;">
+    <!-- SVG Spinner -->
+    <svg class="animate-spin h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"></circle>
+      <path d="M4 12a8 8 0 1 1 8 8" stroke="currentColor"></path>
+    </svg>
+  </div>
+  <!-- Tab Navigation -->
+  <div class="flex">
+    <button
+    :class="activeTab === 'addPatient' ? 'bg-purple-300 text-black font-bold' : 'bg-gray-200 text-black'"
+    class="flex-1 p-2 text-center rounded-t-md shadow-none"
+    @click="activeTab = 'addPatient'">
+    Add Patient
+  </button>
+    <button
+    :class="activeTab === 'managePatients' ? 'bg-purple-300 text-black font-bold' : 'bg-gray-200 text-black'"
+    class="flex-1 p-2 text-center rounded-t-md shadow-none"
+    @click="activeTab = 'managePatients'">
+    Manage Patients
+  </button>
+  </div>
 
-      <!-- Patient Name and Assigned Therapists -->
-      <div class="flex">
-        <div class="flex-1 mx-1">
-          <label class="block mb-2 font-medium">Patient Name</label>
-          <input type="text" x-model="formData.name" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-        </div>
-        <div class="flex-1 mx-1">
-          <label class="block mb-2 font-medium">Assigned Therapist(s)</label>
-          <select id="assignedTherapists" x-model="formData.assignedTherapists" multiple class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+  <!-- Tab Content -->
+  <div>
+    <!-- Add Patient Tab -->
+    <div x-show="activeTab === 'addPatient'">
+      <div x-data="addPatientForm()" class="mx-auto">
+        <div class="bg-white rounded-md shadow-md p-6">
+          <form @submit.prevent="savePatient">
+            <h4 class="font-semibold mb-6 text-2xl">Add Patient</h4>
+
+            <!-- Patient Name and Assigned Therapists -->
+            <div class="flex">
+              <div class="flex-1 mx-1">
+                <label class="block mb-2 font-medium">Patient Name</label>
+                <input type="text" x-model="formData.name" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </div>
+              <div class="flex-1 mx-1">
+                <label class="block mb-2 font-medium">Assigned Therapist(s)</label>
+                <select id="assignedTherapists" x-model="formData.assignedTherapists" multiple class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <template x-for="therapist in therapists" :key="therapist[0]">
               <option :value="therapist[0]" x-text="therapist[1]"></option>
             </template>
           </select>
-        </div>
-      </div>
+              </div>
+            </div>
 
-      <!-- Email and DOB -->
-      <div class="flex">
-        <div class="flex-1 mx-1">
-          <label class="block mb-2 font-medium">Email</label>
-          <input type="email" x-model="formData.email" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-        </div>
-        <div class="flex-1 mx-1">
-          <label class="block mb-2 font-medium">DOB</label>
-          <input type="date" x-model="formData.dob" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-        </div>
-      </div>
+            <!-- Email and DOB -->
+            <div class="flex">
+              <div class="flex-1 mx-1">
+                <label class="block mb-2 font-medium">Email</label>
+                <input type="email" x-model="formData.email" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div class="flex-1 mx-1">
+                <label class="block mb-2 font-medium">DOB</label>
+                <input type="date" x-model="formData.dob" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </div>
+            </div>
 
-      <!-- Subjective -->
-      <label class="block mb-2 font-medium">Subjective</label>
-      <textarea x-model="formData.subjective" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
+            <!-- Subjective -->
+            <label class="block mb-2 font-medium">Subjective</label>
+            <textarea x-model="formData.subjective" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
 
-      <!-- Objective -->
-      <label class="block mb-2 font-medium">Objective</label>
-      <textarea x-model="formData.objective" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
+            <!-- Objective -->
+            <label class="block mb-2 font-medium">Objective</label>
+            <textarea x-model="formData.objective" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
 
-      <!-- Other Notes -->
-      <label class="block mb-2 font-medium">Other Notes</label>
-      <textarea x-model="formData.otherNotes" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" required></textarea>
+            <!-- Other Notes -->
+            <label class="block mb-2 font-medium">Other Notes</label>
+            <textarea x-model="formData.otherNotes" class="border rounded-md border-gray-300 p-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
 
-      <!-- Short Term Goals -->
-      <label class="block mb-2 font-medium">Short Term Goals</label>
-      <div class="border rounded-md border-gray-300 p-4 mb-2 bg-gray-50">
-        <template x-for="(goal, index) in formData.shortTermGoals" :key="index">
-          <div class="flex flex-wrap items-start mb-4">
-            <!-- Long Term Goal Select -->
-            <div class="w-full md:w-1/2 sm:flex-grow sm:mr-2">
-              <select
+            <!-- Short Term Goals -->
+            <label class="block mb-2 font-medium">Short Term Goals</label>
+            <div class="border rounded-md border-gray-300 p-4 mb-2 bg-gray-50">
+              <template x-for="(goalGroup, index) in formData.shortTermGoals" :key="index">
+                <div class="border-b pb-4 mb-4">
+                  <!-- Long Term Goal Select -->
+                  <div class="flex items-center mb-2">
+                    <select
           x-model="formData.shortTermGoals[index].longTermGoal"
           class="border rounded-md border-gray-300 p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="" disabled>Select Long Term Goal</option>
@@ -58,49 +90,143 @@
             <option :value="key" x-text="value"></option>
           </template>
         </select>
-            </div>
+                  </div>
 
-            <!-- Short Term Goal Input -->
-            <div class="w-full md:w-1/2 sm:flex-grow sm:mr-2 mt-2 md:mt-0">
-              <input
-          type="text"
-          x-model="formData.shortTermGoals[index].goal"
-          class="border rounded-md border-gray-300 p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Short Term Goal" />
-            </div>
+                  <!-- Short Term Goal Inputs -->
+                  <template x-for="(subGoal, subIndex) in formData.shortTermGoals[index].goals" :key="subIndex">
+                    <div class="shadow flex items-start p-1 border rounded items-center">
+                      <input
+            type="text"
+            x-model="formData.shortTermGoals[index].goals[subIndex]"
+            class="border rounded-md border-gray-300 p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Short Term Goal" />
+                      <button
+            type="button"
+            @click="removeSubGoal(index, subIndex)"
+            class="ml-2 text-red-600 hover:text-red-800 shadow-none">❌</button>
+                    </div>
+                  </template>
 
-            <!-- Remove Button -->
-            <div class="w-auto mt-2 md:mt-0">
+                  <!-- Add Short Term Goal Button -->
+                  <button
+        type="button"
+        @click="addSubGoal(index)"
+        class="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+        Add Goal
+      </button>
+                </div>
+              </template>
+
+              <!-- Add Long Term Goal Group Button -->
               <button
-          type="button"
-          @click="removeShortTermGoal(index)"
-          class="text-red-600 shadow-none hover:text-red-800">❌
-        </button>
+    type="button"
+    @click="addLongTermGoalGroup"
+    class="shadow-none bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+    Add Long Term Goal
+  </button>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" :disabled="submitting" :class="submitting? 'bg-green-200':'bg-green-500'" class="w-full shadow-none text-white px-6 py-2 rounded-md hover:bg-green-600">Save Patient</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manage Patients Tab -->
+    <div x-show="activeTab === 'managePatients'">
+      <div x-data="managePatientsForm()" class="bg-white rounded-md shadow-md p-6">
+        <h4 class="font-semibold mb-6 text-2xl">Manage Patients</h4>
+
+        <label class="block mb-2 font-medium">Select Patient</label>
+        <div class="flex" style="align-items: center;">
+          <div class="flex-1">
+            <!-- Patient Selection -->
+            <select x-model="selectedPatientId"
+              id="selectedPatient"
+              class="border rounded-md border-gray-300 p-2 w-full mb-4">
+              <option value="" disabled>Select a Patient</option>
+              <template x-for="patient in patients" :key="patient.id">
+                <option :value="patient.id" x-text="patient.name"></option>
+              </template>
+            </select>
+          </div>
+          <div class="flex-1">
+            <button @click="loadPatientData" class="bg-purple-200 text-white px-2 py-[2.5px] mx-1 rounded-md hover:bg-purple-300 shadow-none">🔎</button>
+          </div>
+        </div>
+
+        <!-- Display and Update Patient Goals -->
+        <template x-if="selectedPatient">
+          <div>
+            <h5 class="font-medium mb-4">Short Term Goals for <span x-text="selectedPatient.name"></span></h5>
+            <div class="border rounded-md border-gray-300 p-4 bg-gray-50">
+              <template x-for="(goalGroup, index) in selectedPatient.shortTermGoals" x-effect="reassignShortTermGoals()"
+                :key="index">
+                <div class="border-b pb-4 mb-4">
+                  <div class="flex items-center mb-2">
+                    <select
+                      x-model="selectedPatient.shortTermGoals[index].longTermGoal"
+                      class="longTermGoalSelect border rounded-md border-gray-300 p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="" disabled>Select Long Term Goal</option>
+                      <template x-for="[key, value] in Object.entries(longTermGoals)" :key="key">
+                        <option :value="key" x-text="value"></option>
+                      </template>
+                    </select>
+                  </div>
+
+                  <template x-for="(subGoal, subIndex) in goalGroup.goals" :key="subIndex">
+                    <div class="shadow flex items-start p-1 border rounded items-center">
+                      <input
+                        type="text"
+                        x-model="selectedPatient.shortTermGoals[index].goals[subIndex]"
+                        class="border rounded-md border-gray-300 p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Short Term Goal" />
+                      <button
+                        type="button"
+                        @click="removeSubGoal(index, subIndex)"
+                        class="ml-2 text-red-600 hover:text-red-800 shadow-none">❌</button>
+                    </div>
+                  </template>
+
+                  <button
+                    type="button"
+                    @click="addSubGoal(index)"
+                    class="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                    Add Goal
+                  </button>
+                </div>
+              </template>
+
+              <button
+                type="button"
+                @click="addLongTermGoalGroup"
+                class="shadow-none bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                Add Long Term Goal
+              </button>
             </div>
           </div>
         </template>
 
-        <button
-    type="button"
-    @click="addShortTermGoal"
-    class=" shadow-none bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
-    Add Goal
-  </button>
+        <!-- Save Changes -->
+        <button x-show="selectedPatient"
+          type="button"
+          @click="updatePatient"
+          class="w-full bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600">
+          Save Changes
+        </button>
       </div>
-
-
-      <!-- Submit Button -->
-      <button type="submit" class=" shadow-none bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600">Save Patient</button>
-    </form>
+    </div>
   </div>
 </div>
-
 
 
 <script>
   function addPatientForm() {
   return {
+    longTermGoals: {},
     therapists: [],
+    submitting: false,
     formData: {
       name: '',
       email: '',
@@ -109,8 +235,23 @@
       objective: '',
       otherNotes: '',
       assignedTherapists: [],
-      longTermGoals: {},
       shortTermGoals: [], // Array of { longTermGoal: '', goal: '' }
+    },
+    addLongTermGoalGroup() {
+      this.formData.shortTermGoals.push({ longTermGoal: '', goals: [''] });
+    },
+    removeLongTermGoalGroup(index) {
+      this.formData.shortTermGoals.splice(index, 1);
+    },
+    addSubGoal(groupIndex) {
+      this.formData.shortTermGoals[groupIndex].goals.push('');
+    },
+    removeSubGoal(groupIndex, subIndex) {
+      this.formData.shortTermGoals[groupIndex].goals.splice(subIndex, 1);
+    },
+    addExtraInput() {
+      // Logic to add an extra input field (to be defined as per requirement)
+      alert('Extra input added!');
     },
     async init() {
       // Load therapists
@@ -138,12 +279,15 @@
       }
       this.formData.assignedTherapists = $('#assignedTherapists').val()
       console.log(this.formData);
+      this.submitting = true;
       google.script.run
         .withSuccessHandler((response) => {
+          this.submitting = false;
           showSuccess("Success!",response.message);
           this.resetForm();
         })
         .withFailureHandler((error) => {
+          this.submitting = false;
           alert('Failed to save patient: ' + error.message);
         })
         .savePatient(this.formData);
@@ -163,6 +307,102 @@
         shortTermGoals: [],
       };
     },
+  };
+}
+
+</script>
+<script>
+  function managePatientsForm() {
+  return {
+    patients: [],
+    longTermGoals: {},
+    selectedPatientId: null,
+    selectedPatient: null,
+
+    async init() {
+      // Load patients and long-term goals
+      google.script.run
+        .withSuccessHandler((data) => { 
+          this.patients = data; 
+        })
+        .withFailureHandler((error) => { 
+          alert('Failed to load patients: ' + error.message); 
+        })
+        .getPatients();
+
+      google.script.run
+        .withSuccessHandler((data) => { 
+          this.longTermGoals = data; 
+        })
+        .withFailureHandler((error) => { 
+          alert('Failed to load long-term goals: ' + error.message); 
+        })
+        .getLongTermGoals();
+    },
+    reassignShortTermGoals() {
+      // Trigger re-render by reassigning the array
+      this.selectedPatient.shortTermGoals = [...this.selectedPatient.shortTermGoals];
+    },
+    loadPatientData() {
+      this.selectedPatientId = $("#selectedPatient").val();
+      console.log(this.selectedPatientId)
+      this.loading['main'] = true;
+      google.script.run
+        .withSuccessHandler((patient) => {
+          this.loading['main'] = false;
+          this.selectedPatient = null
+          console.log(patient)
+          if (patient) {
+            // Deep copy to avoid mutating the original patient data
+            this.selectedPatient = JSON.parse(JSON.stringify(patient));
+            console.log(this.selectedPatient)
+
+            // Ensure longTermGoal is properly set for each goal group
+            this.selectedPatient.shortTermGoals.forEach(goalGroup => {
+              if (goalGroup.longTermGoal && !this.longTermGoals[goalGroup.longTermGoal]) {
+                // Reset longTermGoal if it doesn't match any available long-term goals
+                goalGroup.longTermGoal = '';
+              }
+            });
+          }
+        })
+        .withFailureHandler((error) => {
+          this.loading['main'] = false;
+          this.selectedPatient = null
+          console.error('Error loading patient data: ', error);
+          alert('Failed to load patient data. Please try again later.');
+        })
+        .loadPatientData(this.selectedPatientId);
+    },
+
+    addLongTermGoalGroup() {
+      this.selectedPatient.shortTermGoals.push({ longTermGoal: '', goals: [''] });
+    },
+
+    addSubGoal(groupIndex) {
+      this.selectedPatient.shortTermGoals[groupIndex].goals.push('');
+    },
+
+    removeSubGoal(groupIndex, subIndex) {
+      this.selectedPatient.shortTermGoals[groupIndex].goals.splice(subIndex, 1);
+    },
+
+    updatePatient() {
+      if (!this.selectedPatient) return;
+      this.loading['main'] = true;
+      google.script.run
+        .withSuccessHandler(() => {
+          this.loading['main'] = false
+          showSuccess("Success!", 'Patient updated successfully');
+          this.selectedPatient = null; // Reset selection
+          this.selectedPatientId = null;
+        })
+        .withFailureHandler((error) => {
+          this.loading['main'] = false
+          showSuccess('Failed to update patient: ',  error.message);
+        })
+        .updatePatient(this.selectedPatient);
+    }
   };
 }
 
