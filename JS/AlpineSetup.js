@@ -1,4 +1,3 @@
-<script>
   var initialData = {
       serverLoading: false,
       openModal: false,
@@ -26,4 +25,3 @@
   document.addEventListener("alpine:init", () => {
     Alpine.store("appStore", JSON.parse(JSON.stringify(initialData)));
   });
-</script>

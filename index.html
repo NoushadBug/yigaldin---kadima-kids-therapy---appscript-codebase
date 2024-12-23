@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kadima Kids Therapy</title>
+    <meta name="author" content="noushadBug">
+    <meta name="description" content="">
+    <title>Session Notes :: Kadima Kids Therapy</title>
+    <link rel="icon"
+        href="https://images.vexels.com/media/users/3/140003/isolated/lists/960816ac80434d43526b1968ffa415e3-contact-form-icon.png"
+        type="image/x-icon">
+    <!-- Tailwind -->
+    <link href="https://fonts.googleapis.com/css2?family=Proxima+Nova&family=Veneer&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="./CSS/Stylesheet.css">
+
+</head>
+
+<body x-data="{ loading: true, 
+    async include(filePath) {
+        try {
+            const response = await fetch(filePath);
+            if (!response.ok) {
+                throw new Error(`Error fetching file: ${response.statusText}`);
+            }
+            const content = await response.text();
+            return content;
+        } catch (error) {
+            console.error('Error including file:', error);
+            return '<p>Failed to load content.</p>';
+        }
+    }
+
+}" x-init="setTimeout(() => loading = false, 800)" class="bg-gray-100 font-family-karla flex">
+
+    <!-- Full-Screen Loading Animation -->
+    <div x-show="loading" class="fixed inset-0 flex items-center justify-center bg-gray-800 z-50">
+        <div class="flex items-center justify-center">
+            <div class="w-16 h-16 border-t-4 border-b-4 border-white rounded-full animate-spin"></div>
+        </div>
+    </div>
+
+
+    <!-- login starts -->
+    <div x-show="$store.appStore.isUNotLoggedIn" x-transition>
+        <div id="login" class="h-screen w-screen mx-auto bg-white text-black shadow"
+            style="text-align: -webkit-center;align-content: center;place-self: center;">
+            <img src="./img/Logo.png" style="width:30%;filter: drop-shadow(2px 4px 6px #0F0);">
+            <div x-html="include('Login.html')"></div>
+        </div>
+    </div>
+    <!-- login ends -->
+
+
+    <div x-transition x-show="$store.appStore.isULoggedIn"
+        class="relative w-full flex flex-col h-screen overflow-y-hidden">
+        <!-- Desktop Header -->
+        <header class="w-full items-center bg-white py-2 px-6 hidden sm:flex">
+            <div class="w-1/2">
+                <img src="./img/Logo.png" style="width:40%;">
+            </div>
+            <div class="w-1/2 text-center">
+                <span class="text-center text-3xl font-bold mb-6">Therapist Session Form</span>
+            </div>
+            <div x-data="{ isOpen: false }" class="relative w-1/2 flex justify-end">
+                <span class="content-center px-1">Logged in as </span>
+                <button @click="isOpen = !isOpen"
+                    class="justify-center h-10 w-auto px-2 text-left bg-zinc-600 rounded-full text-white relative z-10 flex items-center text-sm overflow-hidden">
+                    <span class="userName whitespace-nowrap overflow-hidden">..</span>
+                </button>
+                <button x-show="isOpen" @click="isOpen = false"
+                    class="bg-transparent h-full w-full fixed inset-0 cursor-default"></button>
+                <div x-show="isOpen"
+                    class="cursor-pointer z-10 absolute w-32 bg-white border-2 border-slate-950 rounded-lg shadow-xl py-2 mt-16">
+                    <!-- <a href="#" class="block px-4 py-2 account-link hover:text-white">Account</a>
+                    <a href="#" class="block px-4 py-2 account-link hover:text-white">Support</a> -->
+                    <a @click="isOpen = !isOpen; logout()"
+                        class="block px-4 py-2 account-link hover:bg-gray-600 hover:text-white">Sign Out</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Header & Nav -->
+        <header x-data="{ isOpen: false }" class="mobile-header bg-white w-full bg-sidebar py-1 px-6 sm:hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex">
+                    <a href="#0" class="text-white text-3xl font-semibold uppercase hover:text-gray-300"
+                        style="width: 30%;">
+                        <img src="./img/Logo.png">
+                    </a>
+                    <div class="w-1/2 m-auto text-center">
+                        <span class="text-center  font-bold mb-6">Therapist Session Form</span>
+                    </div>
+                </div>
+                <button @click="isOpen = !isOpen"
+                    class="bg-transparent box-shadow-none text-dark shadow-none text-3xl focus:outline-none">
+                    <i x-show="!isOpen" class="fas fa-bars"></i>
+                    <i x-show="isOpen" class="fas fa-times"></i>
+                </button>
+
+            </div>
+
+            <!-- Dropdown Nav -->
+            <nav :class="isOpen ? 'flex': 'hidden'" class="flex flex-col pt-4">
+
+                <button @click="logout()"
+                    class="w-full  cta-btn font-semibold py-2 mt-3 rounded-lg shadow-lg hover:shadow-xl bg-gray-300 hover:bg-gray-500 flex items-center justify-center">
+                    <i class="fas fa-sign-out-alt mr-3"></i> Sign Out
+                </button>
+            </nav>
+        </header>
+
+        <div x-data="sectionLoader" class="w-full h-screen overflow-x-hidden border-t flex flex-col">
+            <main class="main-center w-full flex-grow px-6 py-2">
+                <div x-show="!($store.appStore.isAdmin)" x-html="include('SessionForm.html')">
+                </div>
+                <div x-show="($store.appStore.isAdmin)" x-html="include('AddPatientForm.html')">
+                </div>
+
+                <!-- jQuery -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+            </main>
+
+        </div>
+        <footer class="w-full bg-gray-500 text-right text-white p-4 py-0">
+            <small> Built by <a target="_blank" href="https://fiverr.com/web_coder_nsd"
+                    class="underline">noushadBug</a>.</small>
+        </footer>
+
+    </div>
+
+    <!-- Font Awesome -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/js/all.min.js"
+        integrity="sha256-KzZiKy0DWYsnwMF+X1DvQngQ2/FxF7MF3Ff72XcpuPs=" crossorigin="anonymous"></script>
+
+
+    <script src="JS/AlpineSetup.js"></script>
+    <script src="JS/APIFunctions.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <script>
+        function sectionLoader() {
+            return {
+                async include(filePath) {
+                    try {
+                        const response = await fetch(filePath);
+                        if (!response.ok) {
+                            throw new Error(`Error fetching file: ${response.statusText}`);
+                        }
+                        const content = await response.text();
+                        return content;
+                    } catch (error) {
+                        console.error('Error including file:', error);
+                        return '<p>Failed to load content.</p>';
+                    }
+                }
+
+            }
+        }
+    </script>
+    <script>
+
+        $("select:not('.not-select2')").select2({
+            allowClear: true
+        });
+        $('#patient').change(function () {
+            const selectedPatient = $(this).val(); // Get the selected value
+            if (selectedPatient) {
+                console.log('Selected Patient ID:', selectedPatient);
+
+                Alpine.store("appStore").formData.dateOfService = new Date().toISOString().split('T')[0],
+                    Alpine.store("appStore").formData.placeOfServices = "";
+                Alpine.store("appStore").formData.startTime = "";
+                Alpine.store("appStore").formData.endTime = "";
+                Alpine.store("appStore").formData.duration = "";
+                Alpine.store("appStore").formData.planOfCare = "";
+                Alpine.store("appStore").formData.verified = false;
+                Alpine.store("appStore").sessionData = []
+            }
+        });
+    </script>
+    <script>
+        function sessionForm() {
+            return {
+                repeatCount: 0,
+                forceUpdate: 0,
+                duration: 0,
+                tailoringOptions: [],
+                propsOptions: [],
+                planOfCareOptions: [],
+                patientIdNotFound: false,
+                shortTermGoalNotFound: false,
+                longTermGoalNames: [],
+                shortTermGoalNames: {},
+                AllGoals: {},
+                requiredSessionFields: ["outcome", "startTime", "endTime", "longTermGoal", "shortTermGoal", "tailoring", "propsUsed", "levelOfSupport", "childCapacity"],
+                childCapacityLabels: [0, 1, 2],
+                levelOfSupportLabels: [1, 2, 3],
+                loading: {},
+                initializeDropdowns() {
+                    makeApiGetRequest('getDropdownData', {}).then((data) => {
+                        console.log(data)
+                        this.tailoringOptions = data["What I did to tailor the interaction for the child"] || [];
+                        this.propsOptions = data["Activity/Props Used"] || [];
+                        this.longTermGoalNames = data["longTermGoals"] || [];
+                        this.planOfCareOptions = data["Plan of Care"] || [];
+                    }).catch((error) => {
+                        console.error("Failed to fetch dropdown data:", error);
+                    })
+
+                },
+                validateSessions(sessionI, indexI) {
+                    if (sessionI.endTime <= sessionI.startTime) {
+                        sessionI.endTimeError = true;
+                    } else {
+                        sessionI.endTimeError = false;
+                    }
+                    this.$store.appStore.sessionData[indexI].shortTermGoal = $("#shortTermGoals-" + indexI).val();
+                    this.$store.appStore.sessionData.forEach((session, index) => {
+                        if (index > 0) {
+                            session.startTime = this.$store.appStore.sessionData[index - 1].endTime || null;
+                        }
+                        session.validated = this.requiredSessionFields.every(function (field) {
+                            if (field == 'outcome') {
+                                return session[field] && session[field].length > 60
+                            }
+                            if (field == 'tailoring' || field == "propsUsed") {
+                                return session[field].length > 0
+                            }
+                            return session[field]
+                        });
+
+                        if (index + 1 < this.$store.appStore.sessionData.length) {
+                            this.$store.appStore.sessionData[index + 1].isShowing = session.validated;
+                        }
+                    });
+
+                    this.$store.appStore.sessionData = [...this.$store.appStore.sessionData];
+                },
+
+                async fetchPatients() {
+                    try {
+                        if (!Alpine.store("appStore").loggedUser) return;
+
+                        const loggedInUser = JSON.parse(Alpine.store("appStore").loggedUser);
+                        console.log(loggedInUser.value);
+
+                        const therapistId = loggedInUser?.value?.id; // Extract therapist ID
+                        if (loggedInUser?.value?.id == 'admin') return
+                        console.log(therapistId);
+
+                        if (!therapistId) {
+                            showError('Therapist ID Error', 'Therapist ID not found. Please log in again.');
+                            return;
+                        }
+
+                        // Start loading indicator
+                        this.loading['main'] = true;
+
+                        try {
+                            // Fetch patients from the server
+                            const data = await makeApiGetRequest("getPatients", { therapistId });
+
+                            // Update Alpine.js store
+                            Alpine.store("appStore").patients = data;
+                            console.log(Alpine.store("appStore").patients);
+                        } catch (error) {
+                            showError('Fetching Patients Failed', error.message);
+                            console.error('Error fetching patients:', error);
+                        } finally {
+                            this.loading['main'] = false;
+                        }
+
+                    } catch (error) {
+                        this.loading['main'] = false;
+                        showError('Unexpected Error', error.message);
+                        console.error('Unexpected error occurred:', error);
+                    }
+                },
+
+                async fetchShortTermGoals(session, index) {
+                    try {
+                        var sessionIndex = session.id;
+                        var longTermGoal = session.longTermGoal;
+                        var patientId = $('#patient').val();
+                        this.shortTermGoalNames[sessionIndex] = [];
+                        if (this.AllGoals[longTermGoal] && this.AllGoals[longTermGoal].length > 0) {
+                            var selectedLongTermGoals = [];
+                            var selectedShortTermGoals = [];
+
+                            for (let i = 0; i < this.$store.appStore.sessionData.length; i++) {
+                                var selectedLongTermGoal = $(`#longTermGoals-${i}`).val();
+                                var selectedShortTermGoal = $(`#shortTermGoals-${i}`).val();
+                                if (selectedLongTermGoal == longTermGoal && selectedShortTermGoal) selectedShortTermGoals.push(parseInt(selectedShortTermGoal));
+                            }
+                            console.log(selectedShortTermGoals)
+                            const filteredGoals = this.AllGoals[longTermGoal].filter(goal =>
+                                !selectedShortTermGoals.includes(goal.id)
+                            );
+                            this.shortTermGoalNames[sessionIndex] = filteredGoals
+                            return
+                        } else {
+                            this.loading['shortTermGoals'] = true;
+                        }
+
+                        // Check if patient ID is provided
+                        if (!patientId) {
+                            this.patientIdNotFound = true;
+                        } else {
+                            this.patientIdNotFound = false;
+                        }
+
+                        // Fetch short-term goals if patient ID and long-term goal are available
+                        if (patientId && longTermGoal) {
+                            console.log('Fetching short-term goals...');
+                            try {
+                                // Call the API to get short-term goals
+                                const goals = await makeApiGetRequest("getShortTermGoals", { patientId, longTermGoal });
+
+                                console.log('goals');
+                                console.log(goals);
+
+                                this.AllGoals[longTermGoal] = goals;
+
+                                // Gather selected long-term and short-term goals
+                                const selectedShortTermGoals = [];
+                                for (let i = 0; i < this.$store.appStore.sessionData.length; i++) {
+                                    const selectedLongTermGoal = $(`#longTermGoals-${i}`).val();
+                                    const selectedShortTermGoal = $(`#shortTermGoals-${i}`).val();
+                                    if (selectedLongTermGoal === longTermGoal && selectedShortTermGoal) {
+                                        selectedShortTermGoals.push(parseInt(selectedShortTermGoal));
+                                    }
+                                }
+
+                                console.log(selectedShortTermGoals);
+
+                                // Filter goals to exclude already selected ones
+                                const filteredGoals = goals.filter(goal => !selectedShortTermGoals.includes(goal.id));
+
+                                // Update the short-term goal names
+                                this.shortTermGoalNames[sessionIndex] = filteredGoals || [];
+                            } catch (error) {
+                                showError('Error Fetching Short-Term Goals', error.message);
+                                console.error('Error fetching short-term goals:', error);
+                            } finally {
+                                this.loading['shortTermGoals'] = false;
+                            }
+
+                        } else {
+                            console.log('No patient ID or long-term goal. Skipping short-term goals fetch.');
+                            this.loading['shortTermGoals'] = false; // Hide the spinner if no data
+                        }
+                    } catch (error) {
+                        // Handle any unexpected errors
+                        this.loading['shortTermGoals'] = false;
+                        showError('Unexpected Error', error.message);
+                        console.error('Unexpected error:', error);
+                    }
+                    this.validateSessions(session, index)
+                },
+                calculateSessionDuration() {
+                    if (!$('#patient').val() || !this.$store.appStore.patients) {
+                        showError("Patient is not selected", "Select a patient first to continue");
+                        return;
+                    }
+
+                    this.$store.appStore.formData.patientId = $('#patient').val();
+                    let startTime = this.$store.appStore.formData.startTime;
+                    let endTime = this.$store.appStore.formData.endTime;
+
+                    if (startTime > endTime && (startTime && endTime)) {
+                        showError("Duration Error!", "End Time must be later than Start Time");
+                        return;
+                    }
+
+                    if (startTime && endTime) {
+                        const [startHours, startMinutes] = startTime.split(':').map(Number);
+                        const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+                        // Calculate total duration in minutes
+                        let durationMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+
+                        // If duration is between 8 and 15 minutes, round up to 15 minutes
+                        if (durationMinutes % 15 >= 8) {
+                            durationMinutes = Math.ceil(durationMinutes / 15) * 15;
+                        } else {
+                            durationMinutes = Math.floor(durationMinutes / 15) * 15;
+                        }
+
+                        // Update end time based on the rounded duration
+                        const totalMinutes = startHours * 60 + startMinutes + durationMinutes;
+                        const updatedEndHours = Math.floor(totalMinutes / 60);
+                        const updatedEndMinutes = totalMinutes % 60;
+                        endTime = `${String(updatedEndHours).padStart(2, '0')}:${String(updatedEndMinutes).padStart(2, '0')}`;
+                        this.$store.appStore.formData.endTime = endTime;
+
+                        // Calculate hours and minutes for the session duration
+                        const hours = Math.floor(durationMinutes / 60);
+                        const minutes = durationMinutes % 60;
+
+                        this.$store.appStore.formData.duration = `${hours}h ${minutes}m`;
+                        this.duration = `${hours}h ${minutes}m`;
+
+                        // Calculate repeat count based on the duration
+                        this.repeatCount = Math.ceil(durationMinutes / 60);
+                        this.$store.appStore.sessionData = Array.from({ length: this.repeatCount }, (_, index) => ({
+                            id: index,
+                            startTime: index === 0 ? this.$store.appStore.formData.startTime : '',
+                            endTime: '',
+                            longTermGoal: '',
+                            shortTermGoal: '',
+                            tailoring: [],
+                            propsUsed: [],
+                            levelOfSupport: null,
+                            childCapacity: null,
+                            outcome: '',
+                            isShowing: index === 0,
+                            validated: index === 0 && this.$store.appStore.formData.startTime ? true : false
+                        }));
+                    }
+                },
+
+                async submitForm() {
+                    //showSuccess('Success!', 'Form submitted successfully!');
+                    Alpine.store("appStore").formData.patientId = $('#patient').val()
+                    Alpine.store("appStore").formData.placeOfServices = $('#placeOfServices').val()
+                    if (!$('#patient').val()) {
+                        showError("Patient is not selected", "Select a patient first to continue");
+                        return
+                    }
+                    if (!$('#placeOfServices').val()) {
+                        showError("Place of Services is not selected", "Select a place of services first to continue");
+                        return
+                    }
+                    var submissionData = {}
+                    submissionData.formData = JSON.parse(JSON.stringify(Alpine.store("appStore").formData))
+                    submissionData.sessionData = JSON.parse(JSON.stringify(Alpine.store("appStore").sessionData))
+                    if (!Alpine.store("appStore").loggedUser) {
+                        showError("Opps! your information is not found ", "Therapist not found. Refresh the page or Try to re-login");
+                        return
+                    };
+                    const loggedInUser = JSON.parse(Alpine.store("appStore").loggedUser);
+                    console.log(loggedInUser.value);
+                    const therapistId = loggedInUser?.value?.id;
+                    submissionData.formData.therapistId = therapistId
+
+                    console.log(JSON.stringify(submissionData));
+                    //send it to the backend code.gs function here
+                    this.loading['main'] = true;
+
+                    try {
+                        // Call the API with the form submission data
+                        const response = await makeApiGetRequest("submitForm", { data: JSON.stringify(submissionData) });
+                        console.log('Form submission response:', response);
+
+                        // Reset form state in the app store
+                        const appStore = Alpine.store("appStore");
+                        appStore.formData = {
+                            dateOfService: new Date().toISOString().split('T')[0],
+                            patientId: "",
+                            placeOfServices: "",
+                            startTime: "",
+                            endTime: "",
+                            duration: "",
+                            planOfCare: "",
+                            verified: false
+                        };
+                        appStore.sessionData = [];
+
+                        // Reinitialize any relevant UI components
+                        $('select').each(function () {
+                            $(this).trigger('change');
+                        });
+
+                        // Show success notification
+                        showSuccess('Success!', 'Form submitted successfully!');
+                    } catch (error) {
+                        showError('Error Submitting Form', error.message);
+                        console.error('Detailed error from backend:', error);
+                    } finally {
+                        this.loading['main'] = false;
+                    }
+
+                },
+
+                initData() {
+                    if (!Alpine.store("appStore").loggedUser) return;
+                    const loggedInUser = JSON.parse(Alpine.store("appStore").loggedUser);
+                    console.log(loggedInUser.value);
+                    const therapistId = loggedInUser?.value?.id; // Extract therapist ID
+                    if (loggedInUser?.value?.id == 'admin') return
+
+                    this.loading['main'] = true;
+                    this.fetchPatients()
+                    this.initializeDropdowns()
+                },
+
+                loadingSvg: `<svg version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+       width="80px" height="80px" viewBox="0 0 40 40" enable-background="new 0 0 40 40" xml:space="preserve" style=" height: 25px; ">
+      <path opacity="0.2" fill="#000" d="M20.201,5.169c-8.254,0-14.946,6.692-14.946,14.946c0,8.255,6.692,14.946,14.946,14.946
+        s14.946-6.691,14.946-14.946C35.146,11.861,28.455,5.169,20.201,5.169z M20.201,31.749c-6.425,0-11.634-5.208-11.634-11.634
+        c0-6.425,5.209-11.634,11.634-11.634c6.425,0,11.633,5.209,11.633,11.634C31.834,26.541,26.626,31.749,20.201,31.749z"/>
+      <path fill="#000" d="M26.013,10.047l1.654-2.866c-2.198-1.272-4.743-2.012-7.466-2.012h0v3.312h0
+        C22.32,8.481,24.301,9.057,26.013,10.047z">
+        <animateTransform attributeType="xml"
+          attributeName="transform"
+          type="rotate"
+          from="0 20 20"
+          to="360 20 20"
+          dur="0.9s"
+          repeatCount="indefinite"/>
+        </path>
+      </svg>`
+            };
+        }
+    </script>
+
+    <script src="JS/Script.js"></script>
+
+    <script>
+        function addPatientForm() {
+            return {
+                longTermGoals: {},
+                therapists: [],
+                submitting: false,
+                formData: {
+                    name: '',
+                    email: '',
+                    dob: '',
+                    subjective: '',
+                    objective: '',
+                    otherNotes: '',
+                    assignedTherapists: [],
+                    shortTermGoals: [], // Array of { longTermGoal: '', goal: '' }
+                },
+                addLongTermGoalGroup() {
+                    this.formData.shortTermGoals.push({ longTermGoal: '', goals: [''] });
+                },
+                removeLongTermGoalGroup(index) {
+                    this.formData.shortTermGoals.splice(index, 1);
+                },
+                addSubGoal(groupIndex) {
+                    this.formData.shortTermGoals[groupIndex].goals.push('');
+                },
+                removeSubGoal(groupIndex, subIndex) {
+                    this.formData.shortTermGoals[groupIndex].goals.splice(subIndex, 1);
+                },
+                addExtraInput() {
+                    // Logic to add an extra input field (to be defined as per requirement)
+                    alert('Extra input added!');
+                },
+                async init() {
+                    try {
+                        // Load therapists
+                        this.therapists = await makeApiGetRequest("getTherapists");
+
+                        // Load long-term goals
+                        this.longTermGoals = await makeApiGetRequest("getLongTermGoals");
+                    } catch (error) {
+                        alert(`Error loading data: ${error.message}`);
+                    }
+                },
+                addShortTermGoal() {
+                    this.formData.shortTermGoals.push({ longTermGoal: '', goal: '' });
+                },
+                removeShortTermGoal(index) {
+                    this.formData.shortTermGoals.splice(index, 1);
+                },
+                async savePatient() {
+                    if ($('#assignedTherapists').val().length === 0) {
+                        showError("Therapist is not selected!", "At least one therapist should be selected.");
+                        return;
+                    }
+
+                    this.formData.assignedTherapists = $('#assignedTherapists').val();
+                    console.log(this.formData);
+                    this.submitting = true;
+
+                    try {
+                        const response = await makeApiGetRequest("savePatient", this.formData);
+                        console.log('Save Patient Response:', response);
+                        this.submitting = false;
+
+                        // Parse response and show success message
+                        const parsedResponse = JSON.parse(response);
+                        if (parsedResponse.success) {
+                            showSuccess("Success!", parsedResponse.message);
+                            this.resetForm();
+                        } else {
+                            showError("Error!", parsedResponse.message || "An unknown error occurred.");
+                        }
+                    } catch (error) {
+                        this.submitting = false;
+                        alert('Failed to save patient: ' + error.message);
+                        console.error('Error saving patient:', error);
+                    }
+                },
+                resetForm() {
+                    $('#assignedTherapists').val('')
+                    $('#assignedTherapists').change()
+                    this.formData = {
+                        name: '',
+                        email: '',
+                        dob: '',
+                        subjective: '',
+                        objective: '',
+                        otherNotes: '',
+                        assignedTherapists: [],
+                        longTermGoals: this.longTermGoals, // Retain long-term goals
+                        shortTermGoals: [],
+                    };
+                },
+            };
+        }
+
+    </script>
+    <script>
+        function managePatientsForm() {
+            return {
+                patients: [],
+                longTermGoals: {},
+                selectedPatientId: null,
+                selectedPatient: null,
+
+                async init() {
+                    // Load patients and long-term goals
+                    // Load patients
+                    this.patients = await makeApiGetRequest("getPatients");
+
+                    // Load long-term goals
+                    this.longTermGoals = await makeApiGetRequest("getLongTermGoals");
+                },
+                reassignShortTermGoals() {
+                    // Trigger re-render by reassigning the array
+                    this.selectedPatient.shortTermGoals = [...this.selectedPatient.shortTermGoals];
+                },
+                async loadPatientData() {
+                    this.selectedPatientId = $("#selectedPatient").val();
+                    console.log(this.selectedPatientId);
+                    this.loading['main'] = true;
+
+                    try {
+                        const response = await makeApiGetRequest("loadPatientData", { patientId: this.selectedPatientId });
+                        this.loading['main'] = false;
+
+                        if (response) {
+                            const patient = (response);
+                            console.log(patient);
+
+                            if (patient) {
+                                // Deep copy to avoid mutating the original patient data
+                                this.selectedPatient = JSON.parse(JSON.stringify(patient));
+                                console.log(this.selectedPatient);
+
+                                // Ensure longTermGoal is properly set for each goal group
+                                this.selectedPatient.shortTermGoals.forEach(goalGroup => {
+                                    if (goalGroup.longTermGoal && !this.longTermGoals[goalGroup.longTermGoal]) {
+                                        // Reset longTermGoal if it doesn't match any available long-term goals
+                                        goalGroup.longTermGoal = '';
+                                    }
+                                });
+                            } else {
+                                this.selectedPatient = null;
+                            }
+                        } else {
+                            throw new Error("No patient data received");
+                        }
+                    } catch (error) {
+                        this.loading['main'] = false;
+                        this.selectedPatient = null;
+                        console.error("Error loading patient data:", error);
+                        alert("Failed to load patient data. Please try again later.");
+                    }
+                },
+                addLongTermGoalGroup() {
+                    this.selectedPatient.shortTermGoals.push({ longTermGoal: '', goals: [''] });
+                },
+
+                addSubGoal(groupIndex) {
+                    this.selectedPatient.shortTermGoals[groupIndex].goals.push('');
+                },
+
+                removeSubGoal(groupIndex, subIndex) {
+                    this.selectedPatient.shortTermGoals[groupIndex].goals.splice(subIndex, 1);
+                },
+
+                async updatePatient() {
+                    if (!this.selectedPatient) return;
+
+                    this.loading['main'] = true;
+
+                    try {
+                        const response = await makeApiGetRequest("updatePatient", { patientData: JSON.stringify(this.selectedPatient) });
+                        const parsedResponse = (response);
+
+                        if (parsedResponse.success) {
+                            this.loading['main'] = false;
+                            showSuccess("Success!", "Patient updated successfully");
+                            this.selectedPatient = null; // Reset selection
+                            this.selectedPatientId = null;
+                        } else {
+                            throw new Error(parsedResponse.message || "Unknown error occurred while updating patient");
+                        }
+                    } catch (error) {
+                        this.loading['main'] = false;
+                        showError("Failed to update patient:", error.message);
+                    }
+                }
+            };
+        }
+
+    </script>
+
+</body>
+
+</html>

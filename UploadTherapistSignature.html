@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" />
+</head>
+
+<body class="p-6">
+  <form id="uploadForm" class="space-y-4" onsubmit="handleSubmit(event)">
+    <label class="block">
+      <span class="text-gray-700">Select Therapist</span>
+      <select id="therapistSelect"
+        class="block w-full mt-1 border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required>
+        <option value="" disabled selected>Select a Therapist</option>
+      </select>
+    </label>
+    <label class="block">
+      <span class="text-gray-700">Upload Signature</span>
+      <input type="file" id="fileInput" accept="image/*"
+        class="block w-full mt-1 border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required />
+    </label>
+    <button id="submitButton" type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Submit</button>
+    <div id="loading" class="hidden text-blue-600 font-bold text-center">Uploading...</div>
+  </form>
+  <script>
+    const therapists = JSON.parse('<?= therapists ?>');
+
+    // Populate select options
+    const select = document.getElementById('therapistSelect');
+    therapists.forEach(t => {
+      const option = document.createElement('option');
+      option.value = t.id;
+      option.textContent = `${t.id} - ${t.name}`;
+      select.appendChild(option);
+    });
+
+    async function include(filePath) {
+      try {
+        const response = await fetch(filePath);
+        if (!response.ok) {
+          throw new Error(`Error fetching file: ${response.statusText}`);
+        }
+        const content = await response.text();
+        document.getElementById('dynamic-content').innerHTML = content;
+      } catch (error) {
+        console.error('Error including file:', error);
+        document.getElementById('dynamic-content').innerHTML = '<p>Failed to load content.</p>';
+      }
+    }
+
+
+    function handleSubmit(event) {
+      event.preventDefault();
+      const therapistId = document.getElementById('therapistSelect').value;
+      const file = document.getElementById('fileInput').files[0];
+      const submitButton = document.getElementById('submitButton');
+
+      if (!therapistId || !file) {
+        alert('Please select a therapist and upload a signature.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function () {
+        // Disable the submit button and show the loading animation
+        submitButton.disabled = true;
+        submitButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+        document.getElementById('loading').classList.remove('hidden');
+
+        google.script.run
+          .withSuccessHandler(() => {
+            document.getElementById('loading').classList.add('hidden');
+            submitButton.disabled = false;
+            submitButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            alert('Signature uploaded successfully.');
+            google.script.host.close();
+          })
+          .withFailureHandler(err => {
+            document.getElementById('loading').classList.add('hidden');
+            submitButton.disabled = false;
+            submitButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            alert('Error uploading signature: ' + err.message);
+          })
+          .uploadTherapistSignature(therapistId, {
+            name: file.name,
+            mimeType: file.type,
+            data: reader.result.split(',')[1]
+          });
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+
+</html>
