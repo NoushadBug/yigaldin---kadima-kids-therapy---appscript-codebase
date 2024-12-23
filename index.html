@@ -145,6 +145,13 @@
     <!-- Select2 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
     <script>
+        function ReinitializeSelect2() {
+            $("select:not('.not-select2')").select2({
+                allowClear: true
+            });
+        }
+    </script>
+    <script>
         function sectionLoader() {
             return {
                 async include(filePath) {
@@ -166,9 +173,6 @@
     </script>
     <script>
 
-        $("select:not('.not-select2')").select2({
-            allowClear: true
-        });
         $('#patient').change(function () {
             const selectedPatient = $(this).val(); // Get the selected value
             if (selectedPatient) {
@@ -270,6 +274,7 @@
                             // Update Alpine.js store
                             Alpine.store("appStore").patients = data;
                             console.log(Alpine.store("appStore").patients);
+                            ReinitializeSelect2()
                         } catch (error) {
                             showError('Fetching Patients Failed', error.message);
                             console.error('Error fetching patients:', error);
@@ -559,7 +564,7 @@
                     try {
                         // Load therapists
                         this.therapists = await makeApiGetRequest("getTherapists");
-
+                        ReinitializeSelect2()
                         // Load long-term goals
                         this.longTermGoals = await makeApiGetRequest("getLongTermGoals");
                     } catch (error) {
@@ -632,7 +637,7 @@
                     // Load patients and long-term goals
                     // Load patients
                     this.patients = await makeApiGetRequest("getPatients");
-
+                    ReinitializeSelect2()
                     // Load long-term goals
                     this.longTermGoals = await makeApiGetRequest("getLongTermGoals");
                 },
@@ -716,7 +721,6 @@
         }
 
     </script>
-
 </body>
 
 </html>
