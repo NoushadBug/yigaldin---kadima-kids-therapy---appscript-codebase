@@ -1,5 +1,5 @@
 async function makeApiGetRequest(action, params = {}) {
-    SCRIPT_ID = "AKfycbzfe5gV3RNJXJ3gQqtWm6zmdOtI0xpSsSvsHOSjeUVZ8Kf2tR2oBoJBh6HBmrxS_hn_"
+    SCRIPT_ID = "AKfycby4jxfiF_O10O_WLnhldm2CO9AdAfkczjlDzBYRZbQDI0LjfU0KLDMiON74ks32GrEuCw"
     const queryString = Object.entries(params)
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
