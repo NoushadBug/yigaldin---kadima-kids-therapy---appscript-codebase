@@ -636,7 +636,7 @@
                 async init() {
                     // Load patients and long-term goals
                     // Load patients
-                    this.patients = await makeApiGetRequest("getPatients");
+                    this.patients = await makeApiGetRequest("getPatientsList");
                     ReinitializeSelect2()
                     // Load long-term goals
                     this.longTermGoals = await makeApiGetRequest("getLongTermGoals");
@@ -701,7 +701,7 @@
                     this.loading['main'] = true;
 
                     try {
-                        const response = await makeApiGetRequest("updatePatient", { patientData: JSON.stringify(this.selectedPatient) });
+                        const response = await makeApiPostRequest("updatePatient", { patientData: this.selectedPatient });
                         const parsedResponse = (response);
 
                         if (parsedResponse.success) {

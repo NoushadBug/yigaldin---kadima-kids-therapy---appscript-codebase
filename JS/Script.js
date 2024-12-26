@@ -53,6 +53,7 @@ async function login() {
 
       sessionForm().initData();
       syncAlpineData(); // Ensure Alpine.js state is updated
+      window.location.reload();
     } else {
       toastr.error("Invalid login");
     }
