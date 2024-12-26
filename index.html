@@ -588,12 +588,12 @@
                     this.submitting = true;
 
                     try {
-                        const response = await makeApiGetRequest("savePatient", this.formData);
+                        const response = await makeApiPostRequest("savePatient", { data: this.formData });
                         console.log('Save Patient Response:', response);
                         this.submitting = false;
 
                         // Parse response and show success message
-                        const parsedResponse = JSON.parse(response);
+                        const parsedResponse = (response);
                         if (parsedResponse.success) {
                             showSuccess("Success!", parsedResponse.message);
                             this.resetForm();

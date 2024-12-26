@@ -1,4 +1,4 @@
-const SCRIPT_ID = "AKfycbw6tVCIs0sUmjHg7u9WJdOrY5HaFoInJ_kpFr7eacPkb0eXiNtdLAPqwSSr2bOqihE8Kw";
+const SCRIPT_ID = "AKfycbx0NQ78QemeGwnyuD0ylOOAy5pu5ehk_LpQiBXBrWqlUXb4Y-V1LPuD1j38yy_GJGYcbw"
 
 async function makeApiGetRequest(action, params = {}) {
     const queryString = Object.entries(params)
@@ -31,7 +31,7 @@ async function makeApiPostRequest(action, payload = {}) {
 
     const options = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json;charset=utf-8' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: action, payload: payload }),
         redirect: 'follow', // Debug redirects
     };
@@ -40,6 +40,7 @@ async function makeApiPostRequest(action, payload = {}) {
         const response = await fetch(url, options);
 
         const responseBody = await response.text(); // Parse raw response
+        console.log(responseBody);
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}. Response: ${responseBody}`);
         }
