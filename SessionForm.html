@@ -147,7 +147,7 @@
               x-model="session.shortTermGoal">
               <option value="" selected disabled>Select a Short Term Goal</option>
               <template x-for="(goal, goalIndex) in shortTermGoalNames[index]" :key="goalIndex">
-                <option :class="goalIndex%2==0? 'bg-gray-300': ''" :value="goal.id" x-text="goal.text"
+                <option :class="goalIndex%2==0? 'bg-gray-300': ''" :value="goal.id" x-text="(goal.id) + ' - ' + goal.text"
                   :title="goal.text"></option>
               </template>
             </select>
