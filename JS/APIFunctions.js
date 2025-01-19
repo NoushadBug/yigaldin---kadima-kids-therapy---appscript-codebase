@@ -1,4 +1,4 @@
-const SCRIPT_ID = "AKfycbx0NQ78QemeGwnyuD0ylOOAy5pu5ehk_LpQiBXBrWqlUXb4Y-V1LPuD1j38yy_GJGYcbw"
+const SCRIPT_ID = "AKfycbyJevzM7HRJwZ5Pa506UinM4HtOJBK4UMz_ZArgEHqBS_JeZB7MgQcFpBmuqqj7JvrH5A"
 
 async function makeApiGetRequest(action, params = {}) {
     const queryString = Object.entries(params)
